@@ -1,0 +1,44 @@
+# Configuration for the «Їжак з макітрою» (recipes) server. Every value can be overridden by the environment variable
+# named next to it in api/config/config.go (run `./cookbook -h` for the full list).
+
+server:
+  # Address to listen on, e.g. localhost:8000, or :8000 for all interfaces.
+  listen: :3000
+  # Optional URL prefix when served below the site root, e.g. /recipes.
+  # MUST start with a slash and MUST NOT end with one; leave empty for the root.
+  prefix:
+  # Scheme for externally visible URLs (the OAuth callback) and the cookie Secure flag.
+  # Empty = detect per request from TLS or X-Forwarded-Proto / Forwarded. Set to https when TLS
+  # is terminated further out and the proxy in front drops those headers.
+  # Camera capture and the screen wake lock only work over https.
+  scheme:
+
+database:
+  # SQLite database file; relative paths resolve against the working directory.
+  path: data/recipes.sqlite3
+
+photos:
+  # Directory for photo files (one folder per photo with its size variants).
+  path: data/photos
+  max_upload_mb: 15
+
+session:
+  # How long a login lasts without use; every day of use extends it again.
+  ttl: 2160h
+
+# Login providers. A provider with empty settings is disabled; several may be enabled at once.
+providers:
+  google:
+    # OAuth client from Google Cloud Console (type "Web application"). Authorized redirect URI:
+    #   https://<host><prefix>/api/auth/google/callback
+    client_id:
+    client_secret:
+
+  # Logs in as a fixed user without a password. For development and trusted single-user installs.
+  local:
+    user:
+      email:
+      name:
+      avatar_url:
+    # When this is the only enabled provider, skip the login button.
+    auto_submit: false

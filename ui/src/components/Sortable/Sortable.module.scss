@@ -1,0 +1,25 @@
+.handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-btn);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: grab;
+  // the browser must not scroll or select while a long press turns into a drag
+  touch-action: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+
+  &:hover {
+    background: var(--hover-strong);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+}

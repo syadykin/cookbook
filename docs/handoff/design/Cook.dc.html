@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Сирники — режим готування</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+a{color:#4A4A48}a:hover{color:#1F1F1E}
+.ghost{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:#5E5E5B;font:inherit;font-size:15px;text-decoration:none;cursor:pointer}
+.ghost:hover{background:#F2F2F0;color:#1F1F1E}
+.icon{width:44px;padding:0;justify-content:center}
+.round{width:32px;height:32px;min-height:32px;padding:0;justify-content:center;border-radius:50%;border:1px solid #E4E4E1}
+.hide{visibility:hidden}
+.track{display:flex;height:100%;transition:transform .32s cubic-bezier(.2,.7,.2,1);touch-action:pan-y;user-select:none}
+.track.drag{transition:none}
+.slide{flex:0 0 100%;height:100%;overflow-y:auto;padding:16px 20px 24px}
+.seg{flex:1;height:20px;padding:0;border:0;background:transparent;cursor:pointer;display:flex;align-items:center}
+.seg span{display:block;width:100%;height:3px;border-radius:2px;background:#E6E6E3}
+.seg.on span{background:#2B2B2A}
+.ing{width:100%;display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:12px 8px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:17px;color:#2B2B2A;text-align:left;cursor:pointer}
+.ing:hover{background:#F6F6F4}
+.done{text-decoration:line-through;color:#6B6B69}
+.photo{position:relative;display:block;width:100%;aspect-ratio:4 / 3;border:0;border-radius:14px;padding:0;cursor:pointer}
+.thumb{width:56px;height:56px;border:0;border-radius:10px;padding:0;cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tmr{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:1px solid #E4E4E1;border-radius:999px;color:#2B2B2A;font:inherit;font-size:16px;font-variant-numeric:tabular-nums;cursor:pointer}
+.tmr:hover{filter:brightness(0.97)}
+.tmr-x{width:44px;padding:0;justify-content:center;border-radius:50%}
+@keyframes tmrPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.tmr.ring{animation:tmrPulse .9s ease-in-out infinite;border-color:transparent}
+.thumb.on{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #2B2B2A}
+</style>
+</helmet>
+<div style="height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: #FFFFFF; color: #2B2B2A; font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.6">
+
+<header style="flex-shrink: 0; max-width: 640px; width: 100%; margin: 0 auto; padding: 4px 8px 0">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<a class="ghost icon" href="Main.dc.html" aria-label="Закрити режим готування">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+</a>
+<span style="font-family: Caveat, cursive; font-weight: 600; font-size: 26px; line-height: 1">Сирники</span>
+<button type="button" class="ghost icon" aria-label="{{wakeLabel}}" aria-pressed="{{wakePressed}}" title="{{wakeLabel}}" onClick="{{toggleWake}}">
+<sc-if value="{{wakeOn}}" hint-placeholder-val="{{ true }}">
+<svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.6"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg>
+</sc-if>
+<sc-if value="{{wakeOff}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>
+</sc-if>
+</button>
+</div>
+<div role="group" aria-label="Слайди" style="display: flex; gap: 4px; padding: 0 12px">
+<sc-for list="{{segs}}" as="s" hint-placeholder-count="7">
+<button type="button" class="{{s.cls}}" aria-label="{{s.label}}" aria-current="{{s.current}}" onClick="{{s.go}}"><span></span></button>
+</sc-for>
+</div>
+</header>
+
+<div style="flex: 1; min-height: 0; max-width: 640px; width: 100%; margin: 0 auto; overflow: hidden">
+<div class="{{trackClass}}" style="transform: translateX({{tx}})" onPointerDown="{{down}}" onPointerMove="{{move}}" onPointerUp="{{up}}" onPointerCancel="{{cancel}}" onPointerLeave="{{cancel}}">
+
+<section class="slide" aria-label="Інгредієнти" aria-hidden="{{ingHidden}}">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 6px">
+<h1 style="margin: 0; font-family: Caveat, cursive; font-weight: 600; font-size: 38px; line-height: 1.1">Інгредієнти</h1>
+<div style="display: flex; align-items: center; gap: 6px; font-size: 14px; color: #5E5E5B">
+<button type="button" class="ghost round" aria-label="Менше порцій" onClick="{{less}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 12h12"></path></svg></button>
+<span style="min-width: 76px; text-align: center">{{servingsLabel}}</span>
+<button type="button" class="ghost round" aria-label="Більше порцій" onClick="{{more}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 12h12M12 6v12"></path></svg></button>
+</div>
+</div>
+<ul style="list-style: none; margin: 0 -8px; padding: 0">
+<sc-for list="{{ingredients}}" as="item" hint-placeholder-count="8">
+<li style="border-bottom: 1px solid #EFEFEC">
+<button type="button" class="ing" onClick="{{item.toggle}}">
+<span class="{{item.cls}}">{{item.name}}</span>
+<span class="{{item.cls}}" style="flex-shrink: 0; color: #4A4A48; font-variant-numeric: tabular-nums">{{item.qty}}</span>
+</button>
+</li>
+</sc-for>
+</ul>
+<p style="margin: 20px 0 0; display: flex; align-items: center; gap: 6px; font-size: 14px; color: #5E5E5B">
+Гортайте вліво, щоб перейти до кроків
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+</p>
+</section>
+
+<sc-for list="{{steps}}" as="st" hint-placeholder-count="6">
+<section class="slide" aria-label="{{st.label}}" aria-hidden="{{st.hidden}}">
+<div style="display: flex; align-items: center; gap: 10px; margin-top: 4px">
+<div aria-hidden="true" style="width: 32px; height: 32px; border-radius: 50%; background: {{accent}}; display: flex; align-items: center; justify-content: center; font-family: Caveat, cursive; font-size: 22px; font-weight: 700">{{st.num}}</div>
+<span style="font-size: 14px; color: #5E5E5B">{{st.of}}</span>
+</div>
+<p style="margin: 14px 0 0; font-size: 20px; line-height: 1.5">{{st.text}}</p>
+<sc-if value="{{st.tm.has}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: center; gap: 4px; margin-top: 16px">
+<button type="button" class="{{st.tm.cls}}" aria-label="{{st.tm.label}}" onClick="{{st.tm.main}}" style="background: {{st.tm.bg}}">
+<sc-if value="{{st.tm.showPlay}}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"></path></svg></sc-if>
+<sc-if value="{{st.tm.showPause}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 4.5h4v15h-4zM13.5 4.5h4v15h-4z"></path></svg></sc-if>
+<sc-if value="{{st.tm.showBell}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg></sc-if>
+<span>{{st.tm.text}}</span>
+</button>
+<sc-if value="{{st.tm.canReset}}" hint-placeholder-val="{{ false }}">
+<button type="button" class="ghost tmr-x" aria-label="Скинути таймер" onClick="{{st.tm.reset}}"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5"></path><path d="M4.5 4v4h4"></path></svg></button>
+</sc-if>
+<span class="sr" aria-live="assertive">{{st.tm.live}}</span>
+</div>
+</sc-if>
+<sc-if value="{{st.hasPhotos}}" hint-placeholder-val="{{ true }}">
+<div style="margin-top: 22px">
+<button type="button" class="photo" aria-label="{{st.photoLabel}}" onClick="{{st.nextPhoto}}" style="background: {{st.tint}}">
+<sc-if value="{{st.multi}}" hint-placeholder-val="{{ false }}">
+<span style="position: absolute; right: 10px; bottom: 10px; padding: 0 10px; border-radius: 999px; background: rgba(255,255,255,0.9); font-size: 12px; line-height: 24px; color: #2B2B2A">{{st.photoCount}}</span>
+</sc-if>
+</button>
+<sc-if value="{{st.multi}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 10px; margin-top: 12px">
+<sc-for list="{{st.thumbs}}" as="t" hint-placeholder-count="2">
+<button type="button" class="{{t.cls}}" aria-label="{{t.label}}" onClick="{{t.pick}}" style="background: {{t.tint}}"></button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</section>
+</sc-for>
+
+</div>
+</div>
+
+<nav aria-label="Перехід між кроками" style="flex-shrink: 0; max-width: 640px; width: 100%; margin: 0 auto; padding: 6px 12px 14px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #F2F2EF">
+<button type="button" class="{{prevClass}}" onClick="{{prev}}">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+Назад
+</button>
+<sc-if value="{{notLast}}" hint-placeholder-val="{{ true }}">
+<button type="button" class="ghost" onClick="{{next}}" style="color: #2B2B2A">
+{{nextLabel}}
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+</sc-if>
+<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; background: {{accent}}; color: #2B2B2A; font-size: 14px; font-weight: 500; text-decoration: none">Готово</a>
+</sc-if>
+</nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#D6E6D9","options":["#D6E6D9","#F5DCCD","#DDD7F0","#F3E7B8"]},"startSlide":{"editor":"int","default":0,"min":0,"max":6},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.sx = 0; this.sy = 0; this.dragging = false; this.moved = false;
+    this.sentinel = null;
+    this.state = { index: props.startSlide || 0, dx: 0, servings: 4, done: {}, ph: {}, wake: true, timers: {} };
+  }
+  componentDidMount() {
+    var self = this;
+    this.onVis = function () { if (document.visibilityState === 'visible' && self.state.wake) self.lock(); };
+    document.addEventListener('visibilitychange', this.onVis);
+    if (this.state.wake) this.lock();
+    this.tick = setInterval(function () { self.runTick(); }, 250);
+  }
+  componentWillUnmount() {
+    document.removeEventListener('visibilitychange', this.onVis);
+    this.unlock();
+    clearInterval(this.tick);
+  }
+  runTick() {
+    var t = this.state.timers, now = Date.now(), n = {}, changed = false, anyDone = false;
+    Object.keys(t).forEach(function (k) {
+      var x = t[k];
+      if (x.endAt && now >= x.endAt) { n[k] = { total: x.total, left: 0, endAt: null, done: true }; changed = true; }
+      else { n[k] = x; if (x.endAt) changed = true; }
+      if (n[k].done) anyDone = true;
+    });
+    if (changed) this.setState({ timers: n });
+    if (anyDone && now - (this.lastAlarm || 0) > 4000 && (this.alarms || 0) < 8) {
+      this.lastAlarm = now; this.alarms = (this.alarms || 0) + 1; this.alarm();
+    }
+  }
+  alarm() {
+    try { if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]); } catch (e) {}
+    var ac = this.ac;
+    if (!ac) return;
+    try {
+      var t0 = ac.currentTime;
+      for (var i = 0; i < 3; i++) {
+        var o = ac.createOscillator(), g = ac.createGain(), s = t0 + i * 0.45;
+        o.type = 'sine'; o.frequency.value = 880;
+        g.gain.setValueAtTime(0.0001, s);
+        g.gain.exponentialRampToValueAtTime(0.3, s + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, s + 0.3);
+        o.connect(g); g.connect(ac.destination);
+        o.start(s); o.stop(s + 0.32);
+      }
+    } catch (e) {}
+  }
+  lock() {
+    var self = this;
+    if (!('wakeLock' in navigator)) return;
+    if (this.sentinel && !this.sentinel.released) return;
+    navigator.wakeLock.request('screen').then(function (s) {
+      self.sentinel = s;
+      if (!self.state.wake) self.unlock();
+    }).catch(function () {});
+  }
+  unlock() {
+    if (this.sentinel) { this.sentinel.release().catch(function () {}); this.sentinel = null; }
+  }
+  componentDidUpdate(prev) {
+    if (prev.startSlide !== this.props.startSlide) this.setState({ index: this.props.startSlide || 0 });
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state;
+    var steps = [
+      { text: 'Протріть сир через сито або ретельно розімніть виделкою — так сирники будуть ніжнішими.', photos: ['#F1EEE9'] },
+      { text: 'Додайте яйця, цукор, ванільний цукор і дрібку солі. Добре перемішайте.', photos: [] },
+      { text: 'Всипте борошно й замісіть м’яке тісто, що трохи липне до рук. Залиште на 10 хвилин.', photos: ['#EAF0EA', '#F3F3F1'], timer: '10' },
+      { text: 'Сформуйте 10–12 кружечків завтовшки близько 1,5 см і обваляйте їх у борошні.', photos: ['#F3ECE6', '#EFEDF5', '#F1EEE9'] },
+      { text: 'Смажте на середньому вогні під кришкою по 3–4 хвилини з кожного боку до золотистої скоринки.', photos: ['#F1EEE9'], timer: '4' },
+      { text: 'Подавайте теплими зі сметаною або ягідним варенням.', photos: [] }
+    ];
+    var total = steps.length + 1;
+    var idx = Math.max(0, Math.min(total - 1, st.index));
+    function go(i) { self.setState({ index: Math.max(0, Math.min(total - 1, i)) }); }
+    function fmt(n) { var r = Math.round(n * 10) / 10; return String(r).replace('.', ','); }
+    function plural(n) {
+      var a = n % 10, b = n % 100;
+      if (a === 1 && b !== 11) return n + ' порцію';
+      if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return n + ' порції';
+      return n + ' порцій';
+    }
+    var k = st.servings / 4;
+    var raw = [
+      ['Кисломолочний сир, 9%', 500, 'г'], ['Яйця', 2, 'шт'], ['Борошно', 4, 'ст. л.'], ['Цукор', 2, 'ст. л.'],
+      ['Ванільний цукор', 1, 'ч. л.'], ['Сіль', null, 'дрібка'], ['Олія для смаження', 3, 'ст. л.'], ['Сметана до подачі', null, 'за смаком']
+    ];
+    var ingredients = raw.map(function (r, i) {
+      return {
+        name: r[0],
+        qty: r[1] === null ? r[2] : fmt(r[1] * k) + ' ' + r[2],
+        cls: st.done[i] ? 'done' : '',
+        toggle: function () { if (self.moved) return; var d = Object.assign({}, self.state.done); d[i] = !d[i]; self.setState({ done: d }); }
+      };
+    });
+    var accentVal = this.props.accent ?? '#D6E6D9';
+    function fmtT(s) { s = Math.max(0, Math.ceil(s)); var m = Math.floor(s / 60), r = s % 60; return m + ':' + (r < 10 ? '0' : '') + r; }
+    function timerVals(key, minutes) {
+      var total = Math.round(parseFloat(String(minutes || '').replace(',', '.')) * 60) || 0;
+      var x = st.timers[key];
+      if (!x || x.total !== total) x = { total: total, left: total, endAt: null, done: false };
+      var running = !!x.endAt;
+      var left = running ? (x.endAt - Date.now()) / 1000 : x.left;
+      var paused = !running && !x.done && x.left < total;
+      function put(v) { var t = Object.assign({}, self.state.timers); t[key] = v; self.setState({ timers: t }); }
+      function ensureAudio() {
+        try {
+          if (!self.ac) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) self.ac = new AC(); }
+          if (self.ac && self.ac.state === 'suspended') self.ac.resume();
+        } catch (e) {}
+      }
+      return {
+        has: total > 0,
+        cls: 'tmr' + (x.done ? ' ring' : ''),
+        bg: running ? accentVal : (x.done ? '#F5DCCD' : '#FFFFFF'),
+        text: x.done ? 'Час вийшов' : fmtT(left),
+        showPlay: !running && !x.done,
+        showPause: running,
+        showBell: x.done,
+        canReset: running || paused,
+        live: x.done ? 'Час вийшов' : '',
+        label: x.done ? 'Час вийшов. Зупинити сигнал' : (running ? 'Пауза. Залишилось ' + fmtT(left) : 'Запустити таймер на ' + fmtT(left)),
+        reset: function () { if (self.moved) return; put({ total: total, left: total, endAt: null, done: false }); },
+        main: function () {
+          if (self.moved) return;
+          if (x.done) { put({ total: total, left: total, endAt: null, done: false }); return; }
+          if (running) { put({ total: total, left: Math.max(0, (x.endAt - Date.now()) / 1000), endAt: null, done: false }); return; }
+          ensureAudio(); self.alarms = 0; self.lastAlarm = 0;
+          put({ total: total, left: x.left, endAt: Date.now() + x.left * 1000, done: false });
+        }
+      };
+    }
+    var stepVals = steps.map(function (s, i) {
+      var cur = st.ph[i] || 0;
+      var n = s.photos.length;
+      function setPh(j) { var p = Object.assign({}, self.state.ph); p[i] = j; self.setState({ ph: p }); }
+      return {
+        num: i + 1,
+        of: 'Крок ' + (i + 1) + ' з ' + steps.length,
+        label: 'Крок ' + (i + 1),
+        hidden: idx === i + 1 ? 'false' : 'true',
+        text: s.text,
+        hasPhotos: n > 0,
+        tm: timerVals('c' + i, s.timer),
+        multi: n > 1,
+        tint: n ? s.photos[cur] : '#F3F3F1',
+        photoCount: (cur + 1) + ' / ' + n,
+        photoLabel: n > 1 ? 'Наступне фото кроку' : 'Фото кроку',
+        nextPhoto: function () { if (self.moved || n < 2) return; setPh((cur + 1) % n); },
+        thumbs: s.photos.map(function (t, j) {
+          return { tint: t, cls: 'thumb' + (j === cur ? ' on' : ''), label: 'Фото ' + (j + 1) + ' з ' + n, pick: function () { if (!self.moved) setPh(j); } };
+        })
+      };
+    });
+    var segs = [];
+    for (var i = 0; i < total; i++) {
+      (function (i) {
+        segs.push({
+          cls: 'seg' + (i <= idx ? ' on' : ''),
+          current: i === idx ? 'step' : 'false',
+          label: i === 0 ? 'Інгредієнти' : 'Крок ' + i,
+          go: function () { go(i); }
+        });
+      })(i);
+    }
+    return {
+      accent: this.props.accent ?? '#D6E6D9',
+      wakeOn: st.wake,
+      wakeOff: !st.wake,
+      wakePressed: st.wake ? 'true' : 'false',
+      wakeLabel: st.wake ? 'Екран не гасне. Вимкнути' : 'Не давати екрану гаснути',
+      toggleWake: function () {
+        if (self.state.wake) { self.setState({ wake: false }); self.unlock(); }
+        else { self.setState({ wake: true }); self.lock(); }
+      },
+      segs: segs,
+      tx: 'calc(' + (-idx * 100) + '% + ' + st.dx + 'px)',
+      trackClass: 'track' + (st.dx !== 0 ? ' drag' : ''),
+      ingHidden: idx === 0 ? 'false' : 'true',
+      down: function (e) { self.sx = e.clientX; self.sy = e.clientY; self.dragging = true; self.moved = false; },
+      move: function (e) {
+        if (!self.dragging) return;
+        var dx = e.clientX - self.sx, dy = e.clientY - self.sy;
+        if (!self.moved && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) self.moved = true;
+        if (self.moved) {
+          var edge = (self.state.index === 0 && dx > 0) || (self.state.index === total - 1 && dx < 0);
+          self.setState({ dx: edge ? dx / 3 : dx });
+        }
+      },
+      up: function (e) {
+        if (!self.dragging) return;
+        self.dragging = false;
+        var dx = e.clientX - self.sx;
+        if (self.moved && dx < -50) go(self.state.index + 1);
+        else if (self.moved && dx > 50) go(self.state.index - 1);
+        self.setState({ dx: 0 });
+        setTimeout(function () { self.moved = false; }, 0);
+      },
+      cancel: function () { if (!self.dragging) return; self.dragging = false; self.moved = false; self.setState({ dx: 0 }); },
+      ingredients: ingredients,
+      servingsLabel: 'на ' + plural(st.servings),
+      less: function () { self.setState({ servings: Math.max(1, self.state.servings - 1) }); },
+      more: function () { self.setState({ servings: Math.min(24, self.state.servings + 1) }); },
+      steps: stepVals,
+      prev: function () { go(self.state.index - 1); },
+      next: function () { go(self.state.index + 1); },
+      prevClass: 'ghost' + (idx === 0 ? ' hide' : ''),
+      notLast: idx < total - 1,
+      isLast: idx === total - 1,
+      nextLabel: idx === 0 ? 'До кроків' : 'Далі'
+    };
+  }
+}
+</script>
+</body>
+</html>

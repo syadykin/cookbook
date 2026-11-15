@@ -1,0 +1,95 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--scrim);
+  transition: opacity 0.2s ease;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+  }
+}
+
+.sheet {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 11;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 8px 12px calc(14px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: var(--bg);
+  outline: none;
+  transition: transform var(--t-sheet);
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    transform: translateY(100%);
+  }
+}
+
+.grip {
+  width: 36px;
+  height: 4px;
+  margin: 2px auto 12px;
+  border-radius: 2px;
+  background: #e2e2df;
+}
+
+.title {
+  margin: 0 14px 6px;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 14px;
+  border-radius: 12px;
+  color: var(--text);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--hover);
+  }
+
+  // only for keyboard focus: the dialog focuses the first input when it opens, also on a tap
+  &:has(:focus-visible) {
+    outline: 2px solid var(--text);
+    outline-offset: -2px;
+  }
+}
+
+.icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 54px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--field-focus);
+  color: var(--text-2);
+  font: inherit;
+  cursor: pointer;
+}

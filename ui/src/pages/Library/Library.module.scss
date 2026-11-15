@@ -1,0 +1,141 @@
+.page {
+  padding-top: 28px;
+  padding-bottom: 96px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: 52px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.search {
+  position: relative;
+  margin: 12px 0 10px;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  color: var(--text-faint);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 12px 10px 38px;
+  border: 0;
+  border-radius: var(--radius-btn);
+  background: var(--hover);
+  color: var(--text);
+  // the mockup's 15px would make iOS Safari zoom the page on focus; it does that below 16px
+  font-size: 16px;
+  appearance: none;
+
+  &:focus {
+    outline: none;
+    background: #f0f0ee;
+  }
+
+  &::placeholder {
+    color: var(--text-faint);
+  }
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 2px var(--gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 12px -8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  color: var(--text);
+  text-decoration: none;
+
+  &:hover {
+    background: #f7f7f5;
+    color: var(--text);
+  }
+
+  .arrow {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: var(--t-reveal);
+  }
+
+  &:hover .arrow,
+  &:focus-visible .arrow {
+    opacity: 1;
+  }
+}
+
+.thumb {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-thumb);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowTitle {
+  font-family: var(--font-hand);
+  font-size: var(--fs-list-title);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.meta {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 24px 0;
+  color: var(--text-muted);
+}

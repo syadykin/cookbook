@@ -1,0 +1,45 @@
+.list {
+  margin: 0 -8px;
+  padding: 0;
+  list-style: none;
+
+  li {
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 11px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--hover);
+  }
+}
+
+.large .row {
+  padding: 12px 8px;
+  font-size: var(--fs-lead);
+}
+
+.qty {
+  flex-shrink: 0;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.done span {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}

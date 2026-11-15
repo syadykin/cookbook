@@ -1,0 +1,13 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+}
+
+.label {
+  min-width: 78px;
+  text-align: center;
+  white-space: nowrap;
+}

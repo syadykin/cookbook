@@ -1,0 +1,197 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.header,
+.footer,
+.viewport {
+  width: 100%;
+  max-width: var(--column);
+  margin: 0 auto;
+}
+
+.header {
+  flex-shrink: 0;
+  padding: 4px 8px 0;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recipeTitle {
+  overflow: hidden;
+  font-family: var(--font-hand);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.segments {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px;
+}
+
+.segment {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+
+  span {
+    display: block;
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
+    background: #e6e6e3;
+  }
+}
+
+.segmentOn span {
+  background: var(--text);
+}
+
+.viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.track {
+  display: flex;
+  height: 100%;
+  // vertical scrolling inside a slide stays with the browser; horizontal moves are ours
+  touch-action: pan-y;
+  user-select: none;
+  transition: var(--t-slide);
+}
+
+.dragging {
+  transition: none;
+}
+
+.slide {
+  flex: 0 0 100%;
+  height: 100%;
+  padding: 16px var(--gutter) 24px;
+  overflow-y: auto;
+}
+
+.ingHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 6px;
+}
+
+.ingTitle {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: 38px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 20px 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+}
+
+.stepHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+}
+
+.stepText {
+  margin: 14px 0 0;
+  font-size: var(--fs-cook-step);
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.timer {
+  margin-top: 16px;
+}
+
+.photos {
+  margin-top: 22px;
+}
+
+.photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.photoImg {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-photo);
+}
+
+.counter {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 24px;
+}
+
+.thumbs {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.thumb {
+  width: 56px;
+  height: 56px;
+}
+
+.footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid #f2f2ef;
+}
+
+.next {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.invisible {
+  visibility: hidden;
+}

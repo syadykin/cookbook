@@ -1,0 +1,36 @@
+from common import *  # noqa: F401,F403 — logs in on import
+import io
+from PIL import Image
+st, p = upload('rot.jpg', 'image/jpeg')
+check('upload 201', st == 201, (st, p))
+check('orientation applied + capped 2048', (p['width'], p['height']) == (1365, 2048), p)
+st, img = req('GET', f'/api/photos/{p["id"]}?w=2048')
+im = Image.open(io.BytesIO(img))
+check('served jpeg w/o exif', st == 200 and im.format == 'JPEG' and len(im.getexif()) == 0, dict(im.getexif()))
+check('blue bar moved to right edge (rotated CW)', im.getpixel((im.width - 5, 100))[2] > 200 and im.getpixel((5, 100))[2] < 150, (im.getpixel((im.width-5,100)), im.getpixel((5,100))))
+st, img = req('GET', f'/api/photos/{p["id"]}?w=160')
+check('variant 160', Image.open(io.BytesIO(img)).width == 160)
+st, img = req('GET', f'/api/photos/{p["id"]}')
+check('default 1280', Image.open(io.BytesIO(img)).width == 1280)
+st, _ = req('GET', f'/api/photos/{p["id"]}?w=300')
+check('bad width 400', st == 400)
+st, a = upload('alpha.png', 'image/png')
+st2, img = req('GET', f'/api/photos/{a["id"]}?w=160')
+check('png flattened on white', Image.open(io.BytesIO(img)).convert('RGB').getpixel((5, 5)) > (240, 240, 240))
+st, e = upload('fake.heic', 'image/heic'); check('heic 415', st == 415, (st, e))
+st, e = upload('bomb.png', 'image/png'); check('pixel bomb 415', st == 415, (st, e))
+st, e = upload('big.jpg', 'image/jpeg'); check('too large 413', st == 413, (st, e))
+
+# attach: cover + step photo; then move step photo to recipe
+st, r = req('POST', '/api/recipes', dict(title='Фото', description='', timeText='', servings=2, tags=[], ingredients=[],
+        photos=[{'id': p['id']}], steps=[dict(text='a', photos=[{'id': a['id']}])]))
+check('create with photos', st == 201 and r['photos'][0]['id'] == p['id'] and r['steps'][0]['photos'][0]['id'] == a['id'], (st, r))
+r2 = dict(r, photos=[{'id': a['id']}, r['photos'][0]], steps=[dict(r['steps'][0], photos=[])])
+st, u = req('PUT', f'/api/recipes/{r["id"]}', r2, {'If-Match': str(r['version'])})
+check('move step photo to recipe, reorder', st == 200 and [x['id'] for x in u['photos']] == [a['id'], p['id']] and u['steps'][0]['photos'] == [], (st, u))
+st, other = req('POST', '/api/recipes', dict(title='Чужий', description='', timeText='', servings=2, tags=[], ingredients=[], steps=[], photos=[{'id': a['id']}]))
+check('photo of another recipe refused', st == 422, (st, other))
+st, l = req('GET', q('/api/recipes', q='фото'))
+check('list cover', l[0].get('cover', {}).get('id') == a['id'], l)
+st, _ = req('DELETE', f'/api/recipes/{r["id"]}')
+finish()

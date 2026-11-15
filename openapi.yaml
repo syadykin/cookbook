@@ -1,0 +1,436 @@
+openapi: 3.0.4
+info:
+  title: Їжак з макітрою — API
+  version: "1.0"
+  description: |
+    API застосунку «Їжак з макітрою» — особистої книги рецептів. Вхід через Google (OAuth 2.0 / OpenID Connect) або, для розробки,
+    через локального користувача з конфігурації. Сесія — випадковий токен у HttpOnly cookie.
+    Усі ресурси належать поточному користувачу.
+servers:
+  - url: /api
+security:
+  - session: []
+
+tags:
+  - name: auth
+  - name: recipes
+  - name: tags
+  - name: photos
+
+paths:
+  /auth/providers:
+    get:
+      operationId: auth.providers
+      tags: [auth]
+      summary: Доступні способи входу
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AuthProvider" }
+
+  /auth/{provider}/login:
+    get:
+      operationId: auth.login
+      tags: [auth]
+      summary: Почати вхід — редірект на сторінку провайдера
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Provider"
+        - name: return_to
+          in: query
+          description: Відносний шлях застосунку, куди повернутися після входу.
+          schema: { type: string, maxLength: 2048 }
+      responses:
+        "302":
+          description: Редірект на провайдера
+          headers:
+            Location: { required: true, schema: { type: string } }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /auth/{provider}/callback:
+    get:
+      operationId: auth.callback
+      tags: [auth]
+      summary: Повернення від провайдера; створює користувача (за потреби) і сесію
+      description: Параметри запиту (code, state, error…) залежать від провайдера.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Provider"
+      responses:
+        "302":
+          description: Встановлює cookie сесії й редіректить на return_to або на корінь застосунку
+          headers:
+            Location: { required: true, schema: { type: string } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /auth/logout:
+    post:
+      operationId: auth.logout
+      tags: [auth]
+      summary: Вихід — видаляє сесію
+      security: []
+      responses:
+        "204": { description: OK, cookie очищено }
+
+  /me:
+    get:
+      operationId: auth.me
+      tags: [auth]
+      summary: Поточний користувач
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /recipes:
+    get:
+      operationId: recipes.list
+      tags: [recipes]
+      summary: Список рецептів
+      parameters:
+        - name: q
+          in: query
+          description: Пошук у назві та тегах (без урахування регістру, за префіксами слів).
+          schema: { type: string, maxLength: 200 }
+        - name: tag
+          in: query
+          description: Фільтр за одним тегом.
+          schema: { type: string, maxLength: 40 }
+      responses:
+        "200":
+          description: OK, відсортовано за updatedAt desc
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RecipeSummary" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      operationId: recipes.create
+      tags: [recipes]
+      summary: Створити рецепт
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Recipe" }
+      responses:
+        "201":
+          description: Створено
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recipe" }
+        "401": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /recipes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/RecipeId"
+    get:
+      operationId: recipes.get
+      tags: [recipes]
+      summary: Повний рецепт
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recipe" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    put:
+      operationId: recipes.update
+      tags: [recipes]
+      summary: Зберегти рецепт цілком
+      description: |
+        Замінює поля, теги, інгредієнти, кроки і фото. Порядок елементів у масивах = порядок на екрані.
+        Інгредієнти й кроки з id оновлюються, без id — створюються, відсутні — видаляються.
+        Фото передаються за id (поля лише для читання ігноруються); фото, прибрані з рецепта,
+        видаляє фонова задача.
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          description: Значення version рецепта, яке редагувалося.
+          schema: { type: string, pattern: '^"?[0-9]+"?$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Recipe" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recipe" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "412": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+    delete:
+      operationId: recipes.delete
+      tags: [recipes]
+      summary: Видалити рецепт
+      responses:
+        "204": { description: Видалено }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /tags:
+    get:
+      operationId: tags.list
+      tags: [tags]
+      summary: Усі теги користувача
+      responses:
+        "200":
+          description: OK, за частотою використання
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TagCount" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /photos:
+    post:
+      operationId: photos.upload
+      tags: [photos]
+      summary: Завантажити фото
+      description: |
+        Сервер перевіряє тип за вмістом (JPEG, PNG, WebP, GIF), застосовує орієнтацію з EXIF,
+        прибирає метадані, зменшує до 2048 px по довшій стороні й готує варіанти 160/640/1280.
+        Фото прив'язується до рецепта чи кроку через PUT /recipes/{id};
+        неприв'язані фото старші за 24 год видаляються.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "201":
+          description: Завантажено
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Photo" }
+        "401": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "415": { $ref: "#/components/responses/Error" }
+
+  /photos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, pattern: "^[0-9A-Za-z]{1,32}$" }
+    get:
+      operationId: photos.get
+      tags: [photos]
+      summary: Файл зображення
+      parameters:
+        - name: w
+          in: query
+          description: Ширина варіанта (мініатюри 160, кроки 640, обкладинка 1280, оригінал 2048).
+          schema: { type: integer, enum: [160, 640, 1280, 2048], default: 1280 }
+      responses:
+        "200":
+          description: Зображення
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: session
+
+  parameters:
+    Provider:
+      name: provider
+      in: path
+      required: true
+      schema: { type: string, enum: [google, local] }
+    RecipeId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+
+  responses:
+    Error:
+      description: Помилка
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Машинний код помилки.
+          example: not_found
+        message:
+          type: string
+          description: Опис для людини.
+        fields:
+          type: object
+          description: Помилки валідації за шляхом до поля (напр. `steps.2.text`).
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+    AuthProvider:
+      type: object
+      required: [name, title, url, autoSubmit]
+      properties:
+        name: { type: string, example: google }
+        title: { type: string, example: Увійти через Google }
+        url:
+          type: string
+          description: Адреса початку входу (без return_to).
+          example: /api/auth/google/login
+        autoSubmit:
+          type: boolean
+          description: Якщо це єдиний провайдер — увійти автоматично, не показуючи кнопку.
+
+    User:
+      type: object
+      required: [id, email, name]
+      properties:
+        id: { type: integer, format: int64, readOnly: true }
+        email: { type: string, format: email }
+        name: { type: string }
+        avatarUrl: { type: string, nullable: true }
+
+    Photo:
+      type: object
+      description: |
+        Файл доступний за /api/photos/{id}?w=…; у запитах достатньо id, решта полів лише для читання.
+      required: [id, width, height]
+      properties:
+        id: { type: string, pattern: "^[0-9A-Za-z]{1,32}$" }
+        width: { type: integer, readOnly: true, description: Ширина найбільшого варіанта }
+        height: { type: integer, readOnly: true }
+
+    TagCount:
+      type: object
+      required: [name, count]
+      properties:
+        name: { type: string }
+        count: { type: integer }
+
+    Ingredient:
+      type: object
+      required: [name, quantity]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Відсутній — новий інгредієнт.
+        name:
+          type: string
+          maxLength: 200
+          example: "Кисломолочний сир, 9%"
+        quantity:
+          type: string
+          maxLength: 40
+          example: "500 г"
+          description: Вільний текст. Якщо починається з числа (кома або крапка), клієнт масштабує його за порціями.
+
+    Step:
+      type: object
+      required: [text, photos]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Відсутній — новий крок. Стабільний між збереженнями (до нього прив'язані таймери).
+        text: { type: string, maxLength: 5000 }
+        timerSeconds:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 86400
+          description: Якщо задано — на кроці показується кнопка таймера.
+        photos:
+          type: array
+          maxItems: 20
+          items: { $ref: "#/components/schemas/Photo" }
+
+    Recipe:
+      type: object
+      description: Один тип і для читання, і для запису; поля readOnly сервер ігнорує.
+      required: [id, version, title, description, timeText, servings, tags, photos, ingredients, steps, createdAt, updatedAt]
+      properties:
+        id: { type: integer, format: int64, readOnly: true }
+        version:
+          type: integer
+          format: int64
+          readOnly: true
+          description: Лічильник змін; передається в If-Match при збереженні.
+        title: { type: string, maxLength: 200 }
+        description: { type: string, maxLength: 2000 }
+        timeText:
+          type: string
+          maxLength: 40
+          example: "30 хв"
+        servings:
+          type: integer
+          minimum: 1
+          maximum: 99
+          default: 4
+          description: Базова кількість порцій, для якої записані інгредієнти.
+        tags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+            description: Нижній регістр, без дублів (сервер нормалізує).
+        photos:
+          type: array
+          maxItems: 20
+          description: Перше фото — обкладинка.
+          items: { $ref: "#/components/schemas/Photo" }
+        ingredients:
+          type: array
+          maxItems: 200
+          items: { $ref: "#/components/schemas/Ingredient" }
+        steps:
+          type: array
+          maxItems: 100
+          items: { $ref: "#/components/schemas/Step" }
+        createdAt: { type: string, format: date-time, readOnly: true }
+        updatedAt: { type: string, format: date-time, readOnly: true }
+
+    RecipeSummary:
+      type: object
+      required: [id, title, timeText, tags, updatedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        timeText: { type: string }
+        tags: { type: array, items: { type: string } }
+        cover: { $ref: "#/components/schemas/Photo" }
+        updatedAt: { type: string, format: date-time }

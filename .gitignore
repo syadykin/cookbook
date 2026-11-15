@@ -1,0 +1,25 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+.idea/
+.vscode/*
+!.vscode/settings.json
+node_modules/
+*.tsbuildinfo
+.eslintcache
+
+# handoff archive; its contents live in docs/handoff
+/recipes-handoff.zip
+
+# local data and build outputs
+/data/
+/tmp/
+/ui/dist/
+/cookbook
+
+# generated from openapi.yaml
+/api/http/api.gen.go
+/ui/src/lib/api/schema.ts
+__pycache__/

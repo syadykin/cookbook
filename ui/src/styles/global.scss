@@ -1,0 +1,65 @@
+@use './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  // keeps a focused field from scrolling in under the sticky recipe header
+  scroll-padding-top: 64px;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+// element defaults sit at zero specificity (like the component base styles), so any class wins
+:where(a) {
+  color: var(--text-2);
+
+  &:hover {
+    color: #1f1f1e;
+  }
+}
+
+:where(button, input, textarea) {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--text-muted);
+  outline-offset: 2px;
+}
+
+/* visible to screen readers only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* An open menu or popover keeps its zone's hidden controls visible, as in the mockup's `.open`. */
+.reveal-zone:has([data-popup-open]) .reveal-on-hover {
+  opacity: 1;
+}
+
+/* One narrow column, the only layout the app has. */
+.column {
+  max-width: var(--column);
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}

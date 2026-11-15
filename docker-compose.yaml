@@ -1,0 +1,19 @@
+services:
+  site:
+    env_file:
+      - ./.env
+    environment:
+      - SERVER_LISTEN=:3000
+    build:
+      context: .
+    image: cookbook:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - cookbook
+    volumes:
+      - ./data:/data
+
+networks:
+  cookbook:
+    enable_ipv6: false

@@ -1,0 +1,217 @@
+overlay: 1.0.0
+info:
+  title: Server persistence overlay
+  version: 0.0.0
+# Turns the generated wire types into GORM models: column tags, relations, and persistence-only
+# fields hidden from JSON. kin-openapi validates against the plain openapi.yaml, so nothing added
+# here is visible to (or accepted from) clients.
+actions:
+
+# Users
+- target: $.components.schemas.User.properties
+  update:
+    id:
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "primaryKey;autoIncrement"
+    email:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null"
+    name:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:''"
+    # provider-qualified stable identity ("google:<sub>", "local:<email>"); email can change
+    subject:
+      type: string
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;uniqueIndex"
+    createdAt:
+      type: string
+      format: date-time
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "autoCreateTime"
+    updatedAt:
+      type: string
+      format: date-time
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "autoUpdateTime"
+# Every property that $refs User is a persistence-only belongs-to (the owner of a row), so the
+# JSON hiding and the FK constraint live on the schema rather than on each reference.
+- target: $.components.schemas.User
+  update:
+    x-go-json-ignore: true
+    x-oapi-codegen-extra-tags:
+      gorm: "constraint:OnDelete:CASCADE"
+
+# Recipes
+- target: $.components.schemas.Recipe.properties
+  update:
+    id:
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "primaryKey;autoIncrement"
+    version:
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:1"
+    title:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:''"
+    description:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:''"
+    timeText:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:''"
+    servings:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:4;check:servings >= 1"
+    tags:
+      x-oapi-codegen-extra-tags:
+        gorm: "serializer:json;type:text;not null"
+    photos:
+      x-oapi-codegen-extra-tags:
+        gorm: "foreignKey:RecipeId;constraint:OnDelete:SET NULL"
+    ingredients:
+      x-oapi-codegen-extra-tags:
+        gorm: "foreignKey:RecipeId;constraint:OnDelete:CASCADE"
+    steps:
+      x-oapi-codegen-extra-tags:
+        gorm: "foreignKey:RecipeId;constraint:OnDelete:CASCADE"
+    createdAt:
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "autoCreateTime"
+    updatedAt:
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "autoUpdateTime;index"
+    userId:
+      type: integer
+      format: int64
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;index"
+    user:
+      $ref: "#/components/schemas/User"
+
+# Ingredients
+- target: $.components.schemas.Ingredient.properties
+  update:
+    id:
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "primaryKey;autoIncrement"
+    name:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:''"
+    quantity:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:''"
+    recipeId:
+      type: integer
+      format: int64
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;index:ingredients_recipe_position,priority:1"
+    position:
+      type: integer
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;index:ingredients_recipe_position,priority:2"
+
+# Steps
+- target: $.components.schemas.Step.properties
+  update:
+    id:
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "primaryKey;autoIncrement"
+    text:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:''"
+    timerSeconds:
+      x-oapi-codegen-extra-tags:
+        gorm: "check:timer_seconds IS NULL OR timer_seconds > 0"
+    photos:
+      x-oapi-codegen-extra-tags:
+        gorm: "foreignKey:StepId;constraint:OnDelete:SET NULL"
+    recipeId:
+      type: integer
+      format: int64
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;index:steps_recipe_position,priority:1"
+    position:
+      type: integer
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;index:steps_recipe_position,priority:2"
+
+# Photos: owned by at most one recipe or step. Both owner columns NULL = not attached (yet or
+# any more); the cleanup job deletes such rows and their files once they are old enough.
+- target: $.components.schemas.Photo.properties
+  update:
+    id:
+      x-oapi-codegen-extra-tags:
+        gorm: "primaryKey"
+    width:
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null"
+    height:
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null"
+    userId:
+      type: integer
+      format: int64
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;index"
+    user:
+      $ref: "#/components/schemas/User"
+    recipeId:
+      type: integer
+      format: int64
+      x-go-json-ignore: true
+      x-oapi-codegen-extra-tags:
+        gorm: "index"
+    stepId:
+      type: integer
+      format: int64
+      x-go-json-ignore: true
+      x-oapi-codegen-extra-tags:
+        gorm: "index"
+    position:
+      type: integer
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:0"
+    sizeBytes:
+      type: integer
+      format: int64
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null"
+    createdAt:
+      type: string
+      format: date-time
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "autoCreateTime;index"

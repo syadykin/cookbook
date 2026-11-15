@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Вхід — Рецепти</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+a{color:#4A4A48}a:hover{color:#1F1F1E}
+.gbtn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:320px;min-height:50px;padding:0 20px;border:1px solid #DCDCD8;border-radius:999px;background:#FFFFFF;color:#2B2B2A;font-size:16px;font-weight:500;text-decoration:none;transition:background .15s ease,border-color .15s ease}
+.gbtn:hover{background:#F7F7F5;border-color:#C9C9C5;color:#1F1F1E}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: #FFFFFF; color: #2B2B2A; font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.6">
+
+<main style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 40px 28px; text-align: center">
+<div aria-hidden="true" style="display: flex; gap: 8px; margin-bottom: 22px">
+<span style="width: 12px; height: 12px; border-radius: 50%; background: #D6E6D9"></span>
+<span style="width: 12px; height: 12px; border-radius: 50%; background: #F5DCCD"></span>
+<span style="width: 12px; height: 12px; border-radius: 50%; background: #DDD7F0"></span>
+</div>
+<h1 style="margin: 0; font-family: Caveat, cursive; font-weight: 600; font-size: 72px; line-height: 1">Рецепти</h1>
+<p style="margin: 12px 0 40px; font-size: 17px; color: #5E5E5B">Ваша особиста книга рецептів</p>
+<a class="gbtn" href="Library.dc.html">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"></path></svg>
+Увійти через Google
+</a>
+</main>
+
+<footer style="padding: 0 28px 28px; text-align: center; font-size: 13px; color: #6B6B69">
+<a href="#" style="color: #5E5E5B">Конфіденційність</a>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

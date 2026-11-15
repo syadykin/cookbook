@@ -1,0 +1,60 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: var(--scrim);
+  transition: opacity 0.15s ease;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+  }
+}
+
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 21;
+  width: min(400px, calc(100vw - 2 * var(--gutter)));
+  padding: 22px 20px 16px;
+  border-radius: 16px;
+  background: var(--bg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+  outline: none;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+    transform: translate(-50%, -48%);
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-lead);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.description {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.action {
+  min-height: 44px;
+}

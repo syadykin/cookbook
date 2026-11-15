@@ -1,0 +1,88 @@
+/* Дизайн-токени застосунку «Рецепти» (з макета, docs/handoff/design/tokens.css). Шрифти підключені в index.html. */
+
+:root {
+  /* Шрифти */
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-hand: 'Caveat', cursive; /* усі заголовки, номери кроків, назви рецептів */
+
+  /* Текст */
+  --text: #2b2b2a; /* основний */
+  --text-2: #4a4a48; /* кількості, вторинний */
+  --text-muted: #5e5e5b; /* підписи, мета, іконки */
+  --text-faint: #6b6b69; /* плейсхолдери, найдрібніші підписи (мін. для контрасту 4.5:1) */
+
+  /* Поверхні та лінії */
+  --bg: #ffffff;
+  --hover: #f6f6f4;
+  --hover-strong: #f2f2f0;
+  --field-focus: #f4f4f2;
+  --line: #efefec; /* роздільники рядків */
+  --line-soft: #f0f0ed; /* межа хедера/футера */
+  --border: #e4e4e1; /* круглі кнопки, таймер */
+  --dashed: #d9d9d5; /* плитки «додати фото», підкреслення полів редагування (#DCDCD8) */
+  --scrim: rgba(43, 43, 42, 0.28); /* фон під нижньою панеллю */
+
+  /* Пастельні акценти (лише як фон; текст на них завжди --text) */
+  --accent: #d6e6d9; /* шавлієвий, за замовчуванням: номери кроків, «Готово», «Готувати», запущений таймер */
+  --pastel-peach: #f5dccd; /* таймер «Час вийшов» */
+  --pastel-lavender: #ddd7f0;
+  --pastel-yellow: #f3e7b8;
+  --pastel-blue: #d3e3ee;
+  /* теги отримують кольори по колу: accent, peach, lavender, yellow, blue */
+
+  /* Небезпечні дії */
+  --danger: #9b3d2e;
+  --danger-bg: #fbedea;
+
+  /* Плейсхолдери фото (поки немає зображення) */
+  --ph-1: #f1eee9;
+  --ph-2: #eaf0ea;
+  --ph-3: #f3ece6;
+  --ph-4: #efedf5;
+  --ph-5: #f3f3f1;
+
+  /* Розміри */
+  --column: 640px; /* максимальна ширина єдиної колонки */
+  --gutter: 20px; /* бічні відступи */
+  --radius-photo: 14px;
+  --radius-thumb: 10px;
+  --radius-btn: 10px;
+  --radius-pill: 999px;
+  --touch: 44px; /* мінімальна ціль дотику */
+
+  /* Типографіка */
+  --fs-body: 16px;
+  --lh-body: 1.6;
+  --fs-small: 14px;
+  --fs-xs: 13px;
+  --fs-lead: 17px; /* опис рецепта */
+  --fs-cook-step: 20px; /* текст кроку в режимі готування */
+  --fs-h1: clamp(46px, 12vw, 60px); /* назва рецепта, Caveat 600 */
+  --fs-h2: 34px; /* «Інгредієнти», «Приготування», Caveat 600 */
+  --fs-list-title: 27px; /* назва в списку, Caveat 600 */
+
+  /* Рух */
+  --t-reveal: opacity 0.18s ease; /* поява прихованих елементів */
+  --t-slide: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-sheet: 0.24s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Приховані елементи: на пристроях з наведенням з'являються при hover/focus,
+   на сенсорних — видимі завжди (клас .touch-visible). */
+.reveal-on-hover {
+  opacity: 0;
+  transition: var(--t-reveal);
+}
+@media (hover: hover) {
+  .reveal-zone:hover .reveal-on-hover {
+    opacity: 1;
+  }
+}
+.reveal-zone:focus-within .reveal-on-hover {
+  opacity: 1;
+}
+@media (hover: none) {
+  .reveal-on-hover.touch-visible {
+    opacity: 1;
+  }
+}

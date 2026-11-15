@@ -1,0 +1,52 @@
+// :where() keeps these at zero specificity: a className passed in always wins, whatever order
+// the CSS chunks load in
+:where(.field) {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 6px;
+  border: 0;
+  border-bottom: 1px dashed #dcdcd8;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+
+  &:hover {
+    background: #f8f8f6;
+  }
+
+  &:focus {
+    outline: none;
+    border-bottom: 1px solid var(--text);
+    background: var(--field-focus);
+  }
+
+  &::placeholder {
+    color: var(--text-faint);
+  }
+
+  // iOS Safari zooms the page into any focused field under 16px; small fields (tag, timer) keep
+  // the mockup's size only where there is a mouse
+  @media (hover: none) and (pointer: coarse) {
+    font-size: max(16px, 1em);
+  }
+
+  /* number fields keep the look of the others */
+  &[type='number'] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      margin: 0;
+      -webkit-appearance: none;
+    }
+  }
+}
+
+:where(.area) {
+  display: block;
+  overflow: hidden;
+  line-height: var(--lh-body);
+  resize: none;
+}
