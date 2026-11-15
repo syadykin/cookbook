@@ -1,5 +1,7 @@
 // End-to-end walk through the app in real Chrome. Usage: node browser/run.mjs <base> <shotsdir> <imgdir>
 // Expects a fresh database seeded by api/seed.py (recipe ids 1–3).
+import { readFileSync } from 'node:fs';
+
 import puppeteer from 'puppeteer-core';
 
 const [base, out, img] = process.argv.slice(2);
@@ -220,6 +222,52 @@ await page.click('div[role="alertdialog"] button::-p-text(Видалити)');
 await page.waitForFunction(() => location.pathname === '/', { timeout: 5000 }).catch(() => null);
 const after = await page.evaluate(async () => (await fetch('/api/recipes/3')).status);
 check('recipe deleted', after === 404, after);
+
+// a recipe pasted as plain text (e2e/fixtures/plov.txt) is parsed into the new-recipe form
+const plov = readFileSync(new URL('../fixtures/plov.txt', import.meta.url), 'utf8');
+await page.goto(base + '/r/new', { waitUntil: 'networkidle0' });
+await page.click('button::-p-text(Вставити з тексту)');
+await page.waitForSelector('textarea[aria-label], div[role="dialog"] textarea');
+// a controlled React field: set through the native setter so React sees the change
+await page.$eval(
+  'div[role="dialog"] textarea',
+  (el, text) => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(el, text);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  },
+  plov,
+);
+await sleep(300);
+await page.screenshot({ path: `${out}/14-paste-dialog.png` });
+await page.click('div[role="dialog"] button::-p-text(Розібрати)');
+await sleep(400);
+await page.screenshot({ path: `${out}/15-paste-parsed.png` });
+check('paste dialog closes', !(await page.$('div[role="dialog"]')));
+const form = await page.evaluate(() => ({
+  title: document.querySelector('input[placeholder="Назва рецепта"]').value,
+  names: [...document.querySelectorAll('input[placeholder="Інгредієнт"]')].map((i) => i.value),
+  qtys: [...document.querySelectorAll('input[placeholder="500 г"]')].map((i) => i.value),
+  steps: document.querySelectorAll('textarea[placeholder="Опишіть крок"]').length,
+  timers: [...document.querySelectorAll('input[id^="timer-"]')].map((i) => i.value),
+}));
+check('parsed title from «Плов готовий.»', form.title === 'Плов', form.title);
+check('parsed 11 ingredients', form.names.length === 11, form.names.length);
+check(
+  'ingredient units normalised',
+  form.names[0] === 'Бараніни або яловичини' && form.qtys[0] === '1 кг' && form.qtys[2] === '300-350 г' &&
+    form.names[7] === 'Часника' && form.qtys[7] === '2-3 головки' && form.qtys[9] === '',
+  JSON.stringify(form.names.map((n, i) => `${n}|${form.qtys[i]}`)),
+);
+check('parsed 9 steps', form.steps === 9, form.steps);
+check('timers from step text', JSON.stringify(form.timers) === JSON.stringify(['', '60', '', '', '10', '40', '', '', '20']), JSON.stringify(form.timers));
+await page.click('button::-p-text(Готово)');
+await page.waitForFunction(() => /\/r\/\d+$/.test(location.pathname), { timeout: 5000 }).catch(() => null);
+const savedPlov = await page.evaluate(async () => (await fetch('/api/recipes/' + location.pathname.split('/').pop())).json());
+check(
+  'parsed recipe saved',
+  savedPlov.title === 'Плов' && savedPlov.ingredients.length === 11 && savedPlov.steps[1].timerSeconds === 3600,
+  JSON.stringify({ t: savedPlov.title, i: savedPlov.ingredients?.length, s: savedPlov.steps?.[1] }),
+);
 
 check('no page errors', errors.length === 0, errors.join(' | '));
 

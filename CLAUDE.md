@@ -109,6 +109,10 @@ From `ui/`: `npm run lint`, `npm run prettier`, `npm run schema`, `npx tsc -b`.
   servings / crossed-out ingredients shared by the recipe page and cook mode.
 - The editor draft (`pages/Recipe/useDraft.ts`) mirrors to localStorage with the version it
   started from, so a reload restores it and a stale save still gets a 412.
+- «Вставити з тексту» (new recipes only): `src/lib/parseRecipe.ts` turns pasted plain text into
+  editor fields in the browser — pure function, no server part. Its reference input is
+  `e2e/fixtures/plov.txt`; when changing the heuristics, extend the e2e check rather than tuning
+  for one sample.
 - Fields under 16px get bumped to 16px on touch screens (iOS zooms into smaller focused inputs).
 - React Compiler is on; path alias `@/` → `ui/src`; prettier sorts imports.
 

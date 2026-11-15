@@ -23,3 +23,6 @@ node_modules/
 /api/http/api.gen.go
 /ui/src/lib/api/schema.ts
 __pycache__/
+
+# deployment manifest with real credentials
+/cookbook.yaml

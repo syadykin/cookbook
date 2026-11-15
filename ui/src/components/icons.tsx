@@ -207,3 +207,10 @@ export const MoonIcon = (p: IconProps) => (
     <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
   </Icon>
 );
+
+export const ClipboardIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect height="16" rx="2.5" width="14" x="5" y="5" />
+    <path d="M9 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 11h6M9 15h4" />
+  </Icon>
+);

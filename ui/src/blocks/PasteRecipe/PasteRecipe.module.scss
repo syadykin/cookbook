@@ -1,0 +1,13 @@
+.text {
+  min-height: 220px;
+  padding: 10px;
+  border: 1px dashed var(--dashed);
+  border-radius: var(--radius-btn);
+  font-size: var(--fs-small);
+}
+
+.error {
+  margin: 10px 0 0;
+  color: var(--danger);
+  font-size: var(--fs-small);
+}

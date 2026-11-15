@@ -338,3 +338,10 @@
   padding-top: 12px;
   border-top: 1px solid var(--line-soft);
 }
+
+.pasteButton {
+  // its own line: the time field after it is inline too
+  display: flex;
+  width: fit-content;
+  margin: 0 0 8px -12px;
+}

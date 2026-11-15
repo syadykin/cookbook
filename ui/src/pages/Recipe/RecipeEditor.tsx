@@ -1,6 +1,7 @@
 import cn from 'classnames';
 import { type KeyboardEvent, useState } from 'react';
 
+import { PasteRecipe } from '@/blocks/PasteRecipe';
 import { usePhotoPicker } from '@/blocks/PhotoPicker';
 import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -11,6 +12,7 @@ import { DragHandle, SortableList } from '@/components/Sortable';
 import { StepNumber } from '@/components/StepNumber';
 import { Tag } from '@/components/Tag';
 import {
+  ClipboardIcon,
   ClockIcon,
   CloseIcon,
   ImagePlusIcon,
@@ -19,7 +21,7 @@ import {
   TrashIcon,
 } from '@/components/icons';
 import { useTags } from '@/hooks/useRecipes';
-import { type DraftPhoto, photoTint, tagTint } from '@/lib/recipe';
+import { type DraftPhoto, draftToRecipe, photoTint, tagTint } from '@/lib/recipe';
 
 import styles from './Recipe.module.scss';
 import type { DraftApi, PhotoTarget } from './useDraft';
@@ -45,6 +47,7 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
   const [photoIndex, setPhotoIndex] = useState(0);
   const [tagDraft, setTagDraft] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pasting, setPasting] = useState(false);
   const { data: knownTags } = useTags();
 
   const picker = usePhotoPicker<PhotoTarget>({
@@ -87,6 +90,12 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
 
       <main className={cn('column', styles.main)}>
         {d.restored && <p className={styles.notice}>Відновлено незбережені зміни.</p>}
+        {isNew && (
+          <Button className={styles.pasteButton} onClick={() => setPasting(true)}>
+            <ClipboardIcon size={17} />
+            Вставити з тексту
+          </Button>
+        )}
         {error && (
           <p className={styles.error} role="alert">
             {error}
@@ -344,6 +353,18 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
       </main>
 
       {picker.element}
+
+      {isNew && (
+        <PasteRecipe
+          open={pasting}
+          replacing={(() => {
+            const r = draftToRecipe(draft);
+            return r.ingredients.length > 0 || r.steps.length > 0;
+          })()}
+          onOpenChange={setPasting}
+          onParsed={d.applyParsed}
+        />
+      )}
 
       {onDelete && (
         <ConfirmDialog

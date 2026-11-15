@@ -1,4 +1,5 @@
 import type { TIngredient, TPhoto, TRecipe, TStep } from '@/lib/api';
+import type { ParsedRecipe } from '@/lib/parseRecipe';
 
 /** Pastel pill colours, assigned to tags by position in a cycle (text on them stays --text). */
 export const TAG_TINTS = [
@@ -203,6 +204,30 @@ export function draftToRecipe(d: Draft, base?: TRecipe): TRecipe {
         timerSeconds: minutesToSeconds(s.timer),
         photos: uploadedPhotos(s.photos),
       })),
+  };
+}
+
+/**
+ * Puts a recipe parsed from pasted text into the draft. What the text does not mention (photos,
+ * tags, description, and the title/time/servings when absent) is kept as it was.
+ */
+export function applyParsed(d: Draft, p: ParsedRecipe): Draft {
+  return {
+    ...d,
+    title: p.title || d.title,
+    timeText: p.timeText || d.timeText,
+    servings: p.servings ?? d.servings,
+    ingredients: p.ingredients.length
+      ? p.ingredients.map((x) => ({ key: newKey(), ...x }))
+      : d.ingredients,
+    steps: p.steps.length
+      ? p.steps.map((s) => ({
+          key: newKey(),
+          text: s.text,
+          timer: s.timerMinutes ? formatNumber(s.timerMinutes) : '',
+          photos: [],
+        }))
+      : d.steps,
   };
 }
 

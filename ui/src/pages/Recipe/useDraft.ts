@@ -3,11 +3,13 @@ import { useEffect, useRef, useState } from 'react';
 import { storage } from '@/hooks/useLocalStorage';
 import { uploadPhoto } from '@/hooks/useRecipes';
 import { ApiError, type TRecipe } from '@/lib/api';
+import type { ParsedRecipe } from '@/lib/parseRecipe';
 import {
   type Draft,
   type DraftIngredient,
   type DraftPhoto,
   type DraftStep,
+  applyParsed,
   emptyDraft,
   newKey,
   normalizeTag,
@@ -175,6 +177,9 @@ export function useDraft(recipe?: TRecipe) {
 
     addPhotos,
     removePhoto,
+
+    /** fills the form from pasted text (see lib/parseRecipe) */
+    applyParsed: (parsed: ParsedRecipe) => update((d) => applyParsed(d, parsed)),
 
     /** after a conflict the user chose to keep their edits: save them over the newer version */
     rebase: (version: number) => {
