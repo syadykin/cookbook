@@ -2,7 +2,10 @@
 
 import http.cookiejar
 import json
+import os
+import socket
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -50,12 +53,42 @@ def upload(name, ctype='application/octet-stream'):
     return req('POST', '/api/photos', raw=body, ctype='multipart/form-data; boundary=' + bnd)
 
 
+def slow_upload(size, chunk=64 * 1024, pause=0.005):
+    """Uploads `size` bytes in small timed chunks over a raw socket, like a phone on a slow
+    network, and returns the status line the server answered with (or the socket error)."""
+    url = urllib.parse.urlsplit(BASE)
+    cookie = '; '.join(f'{c.name}={c.value}' for c in _jar)
+    bnd = uuid.uuid4().hex
+    body = (
+        f'--{bnd}\r\nContent-Disposition: form-data; name="file"; filename="big.jpg"\r\n'
+        'Content-Type: image/jpeg\r\n\r\n'
+    ).encode() + b'\xff' * size + f'\r\n--{bnd}--\r\n'.encode()
+    head = (
+        f'POST {url.path}/api/photos HTTP/1.1\r\nHost: {url.netloc}\r\nCookie: {cookie}\r\n'
+        f'Content-Type: multipart/form-data; boundary={bnd}\r\nContent-Length: {len(body)}\r\n'
+        'Connection: close\r\n\r\n'
+    ).encode()
+    with socket.create_connection((url.hostname, url.port)) as s:
+        try:
+            s.sendall(head)
+            for i in range(0, len(body), chunk):
+                s.sendall(body[i : i + chunk])
+                time.sleep(pause)
+            return s.recv(200).split(b'\r\n')[0].decode()
+        except OSError as e:
+            return f'socket error: {e}'
+
+
 _ok = True
+_ci = bool(os.environ.get('GITHUB_ACTIONS'))
 
 
 def check(name, cond, extra=''):
     global _ok
     print(('PASS ' if cond else 'FAIL ') + name, '' if cond else extra)
+    if not cond and _ci:
+        # shows up on the run page without opening the log
+        print(f'::error title=e2e {sys.argv[0].split("/")[-1]}::{name} {extra}'.replace('\n', ' '))
     _ok &= bool(cond)
 
 

@@ -84,6 +84,14 @@ func (s *Server) uploadLimitMiddleware(c *gin.Context) {
 	}
 	limit := s.maxUploadBytes()
 	if c.Request.ContentLength > limit {
+		// Answering before the body is read makes net/http close the connection with the rest of
+		// the upload unread, and the client gets a reset — usually instead of this 413, so a phone
+		// would report a network error rather than "file too large". Reading and discarding the
+		// upload first lets the client finish sending and see the answer. Bodies far over the
+		// limit are still cut off rather than read.
+		if c.Request.ContentLength <= 4*limit {
+			_, _ = io.Copy(io.Discard, c.Request.Body)
+		}
 		c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, errPhotoTooLarge(limit))
 		return
 	}

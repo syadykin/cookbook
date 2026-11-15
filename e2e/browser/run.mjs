@@ -8,6 +8,10 @@ const [base, out, img] = process.argv.slice(2);
 let ok = true;
 const check = (name, cond, extra = '') => {
   console.log(`${cond ? 'PASS' : 'FAIL'} ${name}${cond ? '' : ' ' + extra}`);
+  if (!cond && process.env.GITHUB_ACTIONS) {
+    // shows up on the run page without opening the log
+    console.log(`::error title=e2e browser::${name} ${extra}`.replace(/\n/g, ' '));
+  }
   ok &&= !!cond;
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -53,23 +53,29 @@ start() {
 
 python3 "$here/api/make_images.py" "$work/img"
 failed=0
+# fail <what>: record a failed part; in GitHub Actions also as an annotation on the run page
+fail() {
+  failed=1
+  [[ -n "${GITHUB_ACTIONS:-}" ]] && echo "::error title=e2e::$1 failed — see the job log"
+  return 0
+}
 
 echo "== API: recipes"
 start recipes
-python3 "$here/api/test_recipes.py" "$base" || failed=1
+python3 "$here/api/test_recipes.py" "$base" || fail "API recipes"
 stop
 
 echo "== API: photos"
 # a 1 MB limit lets the fixtures exercise 413 without huge files
 start photos PHOTOS_MAX_UPLOAD_MB=1
-python3 "$here/api/test_photos.py" "$base" "$work/img" || failed=1
+python3 "$here/api/test_photos.py" "$base" "$work/img" || fail "API photos"
 stop
 
 echo "== browser"
 start browser LOCAL_AUTO_SUBMIT=true
 python3 "$here/api/seed.py" "$base" "$work/img"
 mkdir -p "$work/shots"
-node "$here/browser/run.mjs" "$base" "$work/shots" "$work/img" || failed=1
+node "$here/browser/run.mjs" "$base" "$work/shots" "$work/img" || fail "browser walkthrough"
 stop
 
 echo "screenshots: $work/shots"

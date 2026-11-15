@@ -20,6 +20,10 @@ check('png flattened on white', Image.open(io.BytesIO(img)).convert('RGB').getpi
 st, e = upload('fake.heic', 'image/heic'); check('heic 415', st == 415, (st, e))
 st, e = upload('bomb.png', 'image/png'); check('pixel bomb 415', st == 415, (st, e))
 st, e = upload('big.jpg', 'image/jpeg'); check('too large 413', st == 413, (st, e))
+# a slow sender must still get the 413, not a connection reset: the server reads the upload
+# before answering (see uploadLimitMiddleware)
+status = slow_upload(3_000_000)
+check('too large 413 for a slow sender', '413' in status, status)
 
 # attach: cover + step photo; then move step photo to recipe
 st, r = req('POST', '/api/recipes', dict(title='Фото', description='', timeText='', servings=2, tags=[], ingredients=[],
