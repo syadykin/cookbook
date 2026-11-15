@@ -87,6 +87,7 @@ export function Library() {
               <Photo className={styles.thumb} photo={r.cover} tint={photoTint(i)} w={160} />
               <div className={styles.text}>
                 <div className={styles.rowTitle}>{r.title || 'Без назви'}</div>
+                {r.description && <div className={styles.description}>{r.description}</div>}
                 <div className={styles.meta}>
                   {[r.timeText, r.tags.join(', ')].filter(Boolean).join(' · ')}
                 </div>

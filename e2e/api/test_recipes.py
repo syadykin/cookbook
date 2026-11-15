@@ -38,6 +38,7 @@ st, again = req('GET', f'/api/recipes/{rid}')
 check('other recipe untouched', again['ingredients'][0]['name'] == 'Яйця')
 
 def titles(qs): return [x['title'] for x in req('GET', q('/api/recipes', **qs))[1]]
+check('summary has description', [x['description'] for x in req('GET', '/api/recipes')[1]] == ['Ніжні', 'Ніжні'])
 check('list order', titles({}) == ['Борщ', 'Сирники бабусині'], titles({}))
 check('search cyrillic prefix', titles({'q': 'сир'}) == ['Сирники бабусині'], titles({'q': 'сир'}))
 check('search case', titles({'q': 'СИРНИКИ'}) == ['Сирники бабусині'])

@@ -127,12 +127,23 @@
   line-height: 1.1;
 }
 
+// one line each: a long description or tag list is cut with an ellipsis (line breaks in the
+// description collapse into spaces)
+.description,
 .meta {
   overflow: hidden;
-  color: var(--text-muted);
-  font-size: var(--fs-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.description {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+
+.meta {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
 }
 
 .empty {

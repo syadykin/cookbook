@@ -40,6 +40,19 @@ await page.goto(base + '/', { waitUntil: 'networkidle0' });
 check('auto login lands on library', page.url() === base + '/', page.url());
 const rows = await page.$$eval('main ul li a', (as) => as.map((a) => a.textContent));
 check('three recipes listed', rows.length === 3, rows.join('|'));
+const desc = await page.evaluate(() => {
+  const row = [...document.querySelectorAll('main ul li a')].find((a) => a.textContent.includes('Сирники'));
+  // title, description, meta inside the row's text column
+  const d = row.querySelector('div:not([class*="thumb"]) > div:nth-child(2)');
+  return {
+    text: d?.textContent ?? '',
+    oneLine: d ? d.getBoundingClientRect().height < 24 : false,
+    cut: d ? d.scrollWidth > d.clientWidth : false,
+    ellipsis: d ? getComputedStyle(d).textOverflow : '',
+  };
+});
+check('description under the title', desc.text.startsWith('Ніжні, з хрусткою скоринкою'), desc.text);
+check('long description is one line, cut with an ellipsis', desc.oneLine && desc.cut && desc.ellipsis === 'ellipsis', JSON.stringify(desc));
 await page.screenshot({ path: `${out}/1-library.png` });
 
 await page.type('#q', 'СИР');

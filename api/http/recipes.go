@@ -407,11 +407,12 @@ func (s *Server) RecipesList(ctx context.Context, req RecipesListRequestObject) 
 	res := make(RecipesList200JSONResponse, 0, len(recipes))
 	for _, r := range recipes {
 		sum := RecipeSummary{
-			Id:        r.Id,
-			Title:     r.Title,
-			TimeText:  r.TimeText,
-			Tags:      r.Tags,
-			UpdatedAt: r.UpdatedAt,
+			Id:          r.Id,
+			Title:       r.Title,
+			Description: r.Description,
+			TimeText:    r.TimeText,
+			Tags:        r.Tags,
+			UpdatedAt:   r.UpdatedAt,
 		}
 		if len(r.Photos) > 0 {
 			cover := r.Photos[0]

@@ -426,10 +426,11 @@ components:
 
     RecipeSummary:
       type: object
-      required: [id, title, timeText, tags, updatedAt]
+      required: [id, title, description, timeText, tags, updatedAt]
       properties:
         id: { type: integer, format: int64 }
         title: { type: string }
+        description: { type: string, description: Короткий опис страви (може бути порожнім). }
         timeText: { type: string }
         tags: { type: array, items: { type: string } }
         cover: { $ref: "#/components/schemas/Photo" }
