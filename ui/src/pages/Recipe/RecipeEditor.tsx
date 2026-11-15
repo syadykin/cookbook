@@ -20,6 +20,7 @@ import {
   TimerIcon,
   TrashIcon,
 } from '@/components/icons';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useTags } from '@/hooks/useRecipes';
 import { type DraftPhoto, draftToRecipe, photoTint, tagTint } from '@/lib/recipe';
 
@@ -44,6 +45,7 @@ const photoLabel = (p: DraftPhoto, n: number) =>
 
 export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Props) {
   const { draft } = d;
+  useDocumentTitle(draft.title.trim() || (isNew ? 'Новий рецепт' : 'Без назви'));
   const [photoIndex, setPhotoIndex] = useState(0);
   const [tagDraft, setTagDraft] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);

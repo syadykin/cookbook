@@ -18,6 +18,7 @@ import {
   SunIcon,
 } from '@/components/icons';
 import { timerKey, useServings } from '@/contexts/Cooking';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useRecipe } from '@/hooks/useRecipes';
 import { useWakeLock } from '@/hooks/useWakeLock';
 import type { TRecipe, TStep } from '@/lib/api';
@@ -44,6 +45,7 @@ export function Cook() {
 
 function CookSlides({ recipe }: { recipe: TRecipe }) {
   const total = recipe.steps.length + 1;
+  useDocumentTitle(recipe.title || 'Без назви');
   const [index, setIndex] = useState(0);
   const [dx, setDx] = useState(0);
   const [wake, setWake] = useState(true);

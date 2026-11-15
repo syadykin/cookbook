@@ -79,6 +79,7 @@ await page.click('a::-p-text(Сирники)');
 await page.waitForSelector('h1');
 await sleep(500);
 check('recipe title', (await page.$eval('h1', (h) => h.textContent)) === 'Сирники');
+check('tab title names the recipe', (await page.title()) === 'Сирники — Їжак з макітрою', await page.title());
 await page.screenshot({ path: `${out}/3-recipe-top.png` });
 
 const qty = () => page.$eval('#ing-h ~ ul li:first-child button span:last-child', (s) => s.textContent).catch(() => null);
@@ -110,6 +111,7 @@ await page.waitForSelector('[aria-label="Слайди"]');
 await sleep(400);
 const cookServ = await page.$eval('section[aria-label="Інгредієнти"] [aria-live]', (s) => s.textContent);
 check('cook mode shares servings', cookServ === 'на 5 порцій', cookServ);
+check('tab title in cook mode', (await page.title()) === 'Сирники — Їжак з макітрою', await page.title());
 await page.screenshot({ path: `${out}/5-cook-ingredients.png` });
 
 const swipe = async (dx) => {
@@ -160,6 +162,7 @@ await page.type('input[placeholder="Назва рецепта"]', 'Сирник�
 await page.type('input[placeholder="+ тег"]', 'Улюблене');
 await page.keyboard.press('Enter');
 check('tag added lowercased', !!(await page.$('span::-p-text(улюблене)')));
+check('tab title follows the title being typed', (await page.title()) === 'Сирники бабусині — Їжак з макітрою', await page.title());
 await page.click('button::-p-text(Додати інгредієнт)');
 await sleep(100);
 const focusedIsNew = await page.evaluate(() => document.activeElement?.placeholder);
@@ -211,6 +214,7 @@ check('draft cleared after save', (await page.evaluate(() => localStorage.getIte
 
 // new recipe
 await page.goto(base + '/r/new', { waitUntil: 'networkidle0' });
+check('tab title for a new recipe', (await page.title()) === 'Новий рецепт — Їжак з макітрою', await page.title());
 await page.type('input[placeholder="Назва рецепта"]', 'Деруни');
 await page.type('input[placeholder="Інгредієнт"]', 'Картопля');
 await page.type('input[placeholder="500 г"]', '1 кг');
@@ -228,6 +232,7 @@ await page.goto(base + '/r/new', { waitUntil: 'networkidle0' });
 await page.click('button::-p-text(Готово)');
 await sleep(500);
 const count = await page.evaluate(async () => (await (await fetch('/api/recipes')).json()).length);
+check('tab title back to the app name', (await page.title()) === 'Їжак з макітрою', await page.title());
 check('empty new recipe not saved', count === 4 && new URL(page.url()).pathname === '/', `${count} ${page.url()}`);
 
 // delete

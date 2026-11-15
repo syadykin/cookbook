@@ -12,6 +12,7 @@ import { Tag } from '@/components/Tag';
 import { TimerButton } from '@/components/TimerButton';
 import { ChevronLeftIcon, ClockIcon, PencilIcon, PlayIcon } from '@/components/icons';
 import { timerKey, useServings } from '@/contexts/Cooking';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { TRecipe } from '@/lib/api';
 import { datesLine, photoTint, tagTint } from '@/lib/recipe';
 
@@ -26,6 +27,7 @@ export function RecipeView({ recipe, onEdit }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [bigStepPhotos, setBigStepPhotos] = useState<Record<string, boolean>>({});
   const servings = useServings(recipe.id, recipe.servings);
+  useDocumentTitle(recipe.title || 'Без назви');
 
   const hero = recipe.photos[Math.min(photoIndex, recipe.photos.length - 1)];
 
