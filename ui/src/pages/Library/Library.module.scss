@@ -51,7 +51,7 @@
 
   &:focus {
     outline: none;
-    background: #f0f0ee;
+    background: var(--hover-strong);
   }
 
   &::placeholder {
@@ -91,7 +91,7 @@
   text-decoration: none;
 
   &:hover {
-    background: #f7f7f5;
+    background: var(--hover-soft);
     color: var(--text);
   }
 

@@ -30,7 +30,7 @@
 
   &:hover:not(:disabled) {
     background: var(--hover-strong);
-    color: #1f1f1e;
+    color: var(--text-strong);
   }
 }
 
@@ -40,7 +40,7 @@
   max-width: 320px;
   min-height: 50px;
   padding: 0 20px;
-  border: 1px solid #dcdcd8;
+  border: 1px solid var(--field-line);
   border-radius: var(--radius-pill);
   background: var(--bg);
   color: var(--text);
@@ -48,9 +48,9 @@
   font-weight: 500;
 
   &:hover:not(:disabled) {
-    background: #f7f7f5;
-    border-color: #c9c9c5;
-    color: #1f1f1e;
+    background: var(--hover-soft);
+    border-color: var(--border-hover);
+    color: var(--text-strong);
   }
 }
 
@@ -94,7 +94,7 @@
 
   &:hover:not(:disabled) {
     background: var(--hover-strong);
-    color: #1f1f1e;
+    color: var(--text-strong);
   }
 
   // keeps the 44px touch target around the 32px circle

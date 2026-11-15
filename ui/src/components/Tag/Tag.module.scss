@@ -25,7 +25,7 @@
   cursor: pointer;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.7);
+    background: var(--overlay-soft);
   }
 }
 
@@ -33,7 +33,7 @@
   flex-shrink: 0;
   min-height: 32px;
   padding: 0 12px;
-  border: 1px solid #e6e6e3;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-pill);
   background: var(--bg);
   color: var(--text-2);

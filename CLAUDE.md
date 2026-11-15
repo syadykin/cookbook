@@ -101,6 +101,10 @@ From `ui/`: `npm run lint`, `npm run prettier`, `npm run schema`, `npx tsc -b`.
   `ApiError`). Add calls there, not in components.
 - Hidden controls: `reveal` prop on Button/MenuTrigger → `.reveal-on-hover` (+ `.touch-visible`)
   inside a `.reveal-zone`; an open Base UI popup keeps its zone visible.
+- Colours come only from `src/styles/tokens.css`; the dark scheme there follows
+  `prefers-color-scheme` (no in-app switch). Never hard-code a colour in a component: add a token
+  with both a light and a dark value. Pastels stay backgrounds with `--text` on them; popups use
+  `--surface`, which is lighter than the page in the dark scheme.
 - Base component styles and global element defaults are wrapped in `:where()` (zero
   specificity) so a `className` passed by a page always wins regardless of CSS chunk order. Keep
   it that way when adding components.

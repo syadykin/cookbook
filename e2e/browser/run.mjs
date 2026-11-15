@@ -271,6 +271,31 @@ check(
 
 check('no page errors', errors.length === 0, errors.join(' | '));
 
+// ---------- dark scheme, taken from the browser setting -------------------------------------------
+const dark = await browser.newPage();
+await dark.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
+await dark.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+await dark.goto(base + '/', { waitUntil: 'networkidle0' });
+const darkBg = await dark.evaluate(() => getComputedStyle(document.body).backgroundColor);
+check('dark scheme follows the browser', darkBg === 'rgb(24, 24, 23)', darkBg);
+await dark.screenshot({ path: `${out}/16-dark-library.png` });
+await dark.goto(base + '/r/1', { waitUntil: 'networkidle0' });
+await sleep(300);
+await dark.screenshot({ path: `${out}/17-dark-recipe.png` });
+await dark.goto(base + '/r/1?edit', { waitUntil: 'networkidle0' });
+await sleep(300);
+await dark.screenshot({ path: `${out}/18-dark-edit.png` });
+await dark.goto(base + '/r/1/cook', { waitUntil: 'networkidle0' });
+await dark.click('button[aria-label="Крок 3"]');
+await sleep(450);
+await dark.screenshot({ path: `${out}/19-dark-cook.png` });
+await dark.goto(base + '/', { waitUntil: 'networkidle0' });
+await dark.click('button[aria-label="Обліковий запис"]');
+await sleep(300);
+await dark.screenshot({ path: `${out}/20-dark-menu.png` });
+const lightBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+check('light scheme unchanged', lightBg === 'rgb(255, 255, 255)', lightBg);
+
 // ---------- phone (touch): revealed controls, photo source sheet --------------------------------
 const phone = await phoneBrowser.newPage();
 await phone.emulate({

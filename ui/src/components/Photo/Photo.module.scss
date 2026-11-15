@@ -84,7 +84,7 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--overlay);
   color: var(--text);
   cursor: pointer;
 
@@ -108,8 +108,8 @@
   cursor: pointer;
 
   &:hover {
-    border-color: #9c9c98;
-    background: #fafaf8;
+    border-color: var(--dashed-hover);
+    background: var(--hover-soft);
     color: var(--text);
   }
 }

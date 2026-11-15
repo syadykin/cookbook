@@ -5,14 +5,14 @@
   min-width: 0;
   padding: 8px 6px;
   border: 0;
-  border-bottom: 1px dashed #dcdcd8;
+  border-bottom: 1px dashed var(--field-line);
   border-radius: 6px 6px 0 0;
   background: transparent;
   color: var(--text);
   font: inherit;
 
   &:hover {
-    background: #f8f8f6;
+    background: var(--hover-soft);
   }
 
   &:focus {

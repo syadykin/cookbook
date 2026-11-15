@@ -4,9 +4,9 @@
   max-width: calc(100vw - 2 * var(--gutter));
   padding: 6px;
   border-radius: 14px;
-  background: var(--bg);
+  background: var(--surface);
   box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.08),
+    0 10px 30px var(--shadow-color),
     0 0 0 1px var(--line);
   outline: none;
   transform-origin: var(--transform-origin);
