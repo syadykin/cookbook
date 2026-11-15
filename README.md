@@ -1,42 +1,47 @@
 # Їжак з макітрою
 
-Особиста книга рецептів: mobile-first, одна колонка, на екрані — лише рецепт. Перегляд і
-редагування на одній сторінці, режим готування зі свайпами й таймерами.
+A personal recipe book: mobile first, one narrow column, nothing on screen but the recipe. Viewing
+and editing happen on the same page, and cook mode walks through the steps as swipeable slides with
+timers. Recipes can be pasted in as plain text and parsed in the browser. The UI is in Ukrainian
+and follows the browser's light or dark colour scheme.
 
-Один Go-бінарник (gin + GORM + SQLite) з вбудованим React-інтерфейсом. Вхід через Google.
+A single Go binary (gin + GORM + SQLite) with the React UI embedded. Sign-in is through Google, or
+as a fixed local user for development and trusted installs.
 
-## Запуск для розробки
+## Development
 
 ```sh
-cp config.yaml config.local.yaml   # за бажанням
-echo 'LOCAL_USER_EMAIL=me@example.com' >> .env   # вхід без Google
-make dev        # Go на :8000 (air) + Vite на :3000 з проксі /api
+echo 'LOCAL_USER_EMAIL=me@example.com' >> .env   # sign in without Google
+make dev        # Go on :8000 (air) + Vite on :3000 proxying /api
 ```
 
-Відкрийте http://localhost:3000. Камера та «екран не гасне» вимагають HTTPS — для перевірки
-з телефона потрібен тунель або сертифікат.
+Open http://localhost:3000. The camera and keeping the screen awake need HTTPS, so testing them
+from a phone needs a tunnel or a certificate.
 
-## Збірка
+## Build and run
 
 ```sh
-make build      # ui/dist, потім ./cookbook
+make build      # ui/dist, then ./cookbook
 ./cookbook -c config.yaml
 docker compose up --build
 ```
 
-Налаштування — `config.yaml`, кожне значення можна перевизначити змінною оточення
-(`./cookbook -h`). Для Google потрібен OAuth-клієнт типу «Web application» з redirect URI
+Settings live in `config.yaml`; every value can be overridden by an environment variable
+(`./cookbook -h`). Google sign-in needs a "Web application" OAuth client with the redirect URI
 `https://<host><prefix>/api/auth/google/callback`.
 
-## Перевірка
+## Checks
 
 ```sh
-make e2e        # потрібні Python 3 з Pillow, Node і Google Chrome
+make e2e        # needs Python 3 with Pillow, Node and Google Chrome
 ```
 
-Перевіряє API рецептів і фото та проходить застосунок у браузері (миша й сенсорний екран) на
-тимчасовій базі; скриншоти лишаються в теці, яку скрипт друкує наприкінці.
+Exercises the recipe and photo API and walks through the app in a browser (mouse and touch, light
+and dark) on throwaway data; screenshots stay in the directory the script prints at the end. CI
+runs the same on every push; publishing a GitHub release (tag `vX.Y.Z`) also pushes the Docker
+image.
 
-## Матеріали
+## Material
 
-`docs/handoff/` — вихідний пакет: макети екранів (`design/*.dc.html`), токени, чернетки API й схеми.
+`docs/handoff/` is the original design package (in Ukrainian): screen mockups
+(`design/*.dc.html`), design tokens, and drafts of the API and schema.

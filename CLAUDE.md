@@ -12,7 +12,8 @@ Structure and tooling deliberately mirror the sibling project `/home/devel/shukh
 doubt about a convention, look there. The product spec is `docs/handoff/README.md`; the
 `design/*.dc.html` files are the visual reference (design-canvas format, not runnable code).
 
-UI copy is Ukrainian; code, comments and commit messages are English.
+UI copy (strings users see in the app) is Ukrainian. Everything else is English: code, comments,
+commit messages, docs (README, OpenAPI descriptions), release notes and PR text.
 
 ## Commands
 

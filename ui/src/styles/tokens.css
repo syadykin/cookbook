@@ -1,89 +1,89 @@
-/* Дизайн-токени застосунку (з макета, docs/handoff/design/tokens.css). Шрифти підключені в index.html.
-   Темна схема — нижче, під prefers-color-scheme: dark; береться з налаштувань браузера/системи. */
+/* Design tokens (from the mockup, docs/handoff/design/tokens.css). Fonts are loaded in index.html.
+   The dark scheme is below, under prefers-color-scheme: dark — it follows the browser/OS setting. */
 
 :root {
   color-scheme: light dark;
 
-  /* Шрифти */
+  /* Fonts */
   --font-body: 'Inter', system-ui, sans-serif;
-  --font-hand: 'Caveat', cursive; /* усі заголовки, номери кроків, назви рецептів */
+  --font-hand: 'Caveat', cursive; /* all headings, step numbers, recipe titles */
 
-  /* Текст */
-  --text: #2b2b2a; /* основний */
-  --text-2: #4a4a48; /* кількості, вторинний */
-  --text-muted: #5e5e5b; /* підписи, мета, іконки */
-  --text-faint: #6b6b69; /* плейсхолдери, найдрібніші підписи (мін. для контрасту 4.5:1) */
-  --text-strong: #1f1f1e; /* текст кнопок і посилань під курсором */
+  /* Text */
+  --text: #2b2b2a; /* body */
+  --text-2: #4a4a48; /* quantities, secondary */
+  --text-muted: #5e5e5b; /* captions, meta, icons */
+  --text-faint: #6b6b69; /* placeholders, smallest captions (the minimum for 4.5:1 contrast) */
+  --text-strong: #1f1f1e; /* button and link text on hover */
 
-  /* Поверхні та лінії */
+  /* Surfaces and lines */
   --bg: #ffffff;
   --hover: #f6f6f4;
   --hover-strong: #f2f2f0;
   --field-focus: #f4f4f2;
-  --line: #efefec; /* роздільники рядків */
-  --line-soft: #f0f0ed; /* межа хедера/футера */
-  --border: #e4e4e1; /* круглі кнопки, таймер */
-  --dashed: #d9d9d5; /* плитки «додати фото», підкреслення полів редагування (#DCDCD8) */
-  --scrim: rgba(43, 43, 42, 0.28); /* фон під нижньою панеллю */
-  --surface: #ffffff; /* меню, діалоги, нижня панель — у темній схемі світліші за сторінку */
-  --hover-soft: #f7f7f5; /* рядок списку, поле, плитка під курсором */
-  --border-soft: #e6e6e3; /* фільтр-чипи, сегменти прогресу, ручка панелі */
-  --border-hover: #c9c9c5; /* рамка кнопки входу під курсором */
-  --dashed-hover: #9c9c98; /* рамка плитки «додати фото» під курсором */
-  --field-line: #dcdcd8; /* підкреслення полів редагування, рамка кнопки входу */
-  --header-bg: rgba(255, 255, 255, 0.94); /* липка шапка рецепта */
-  --overlay: rgba(255, 255, 255, 0.92); /* «×» і лічильник поверх фото */
-  --overlay-soft: rgba(255, 255, 255, 0.7); /* «×» на тезі під курсором */
-  --shadow-color: rgba(0, 0, 0, 0.1); /* тіні спливаючих вікон */
+  --line: #efefec; /* row separators */
+  --line-soft: #f0f0ed; /* header/footer border */
+  --border: #e4e4e1; /* round buttons, timer */
+  --dashed: #d9d9d5; /* «add photo» tiles */
+  --scrim: rgba(43, 43, 42, 0.28); /* behind the bottom sheet and dialogs */
+  --surface: #ffffff; /* menus, dialogs, bottom sheet — lighter than the page in the dark scheme */
+  --hover-soft: #f7f7f5; /* list row, field, tile on hover */
+  --border-soft: #e6e6e3; /* filter chips, progress segments, sheet grip */
+  --border-hover: #c9c9c5; /* sign-in button border on hover */
+  --dashed-hover: #9c9c98; /* «add photo» tile border on hover */
+  --field-line: #dcdcd8; /* edit field underline, sign-in button border */
+  --header-bg: rgba(255, 255, 255, 0.94); /* sticky recipe header */
+  --overlay: rgba(255, 255, 255, 0.92); /* «×» and counter over a photo */
+  --overlay-soft: rgba(255, 255, 255, 0.7); /* «×» on a tag on hover */
+  --shadow-color: rgba(0, 0, 0, 0.1); /* popup shadows */
 
-  /* Пастельні акценти (лише як фон; текст на них завжди --text) */
-  --accent: #d6e6d9; /* шавлієвий, за замовчуванням: номери кроків, «Готово», «Готувати», запущений таймер */
-  --pastel-peach: #f5dccd; /* таймер «Час вийшов» */
+  /* Pastel accents (backgrounds only; text on them is always --text) */
+  --accent: #d6e6d9; /* sage, the default: step numbers, «Готово», «Готувати», a running timer */
+  --pastel-peach: #f5dccd; /* the «Час вийшов» timer */
   --pastel-lavender: #ddd7f0;
   --pastel-yellow: #f3e7b8;
   --pastel-blue: #d3e3ee;
-  /* теги отримують кольори по колу: accent, peach, lavender, yellow, blue */
+  /* tags cycle through: accent, peach, lavender, yellow, blue */
 
-  /* Небезпечні дії */
+  /* Destructive actions */
   --danger: #9b3d2e;
   --danger-bg: #fbedea;
 
-  /* Плейсхолдери фото (поки немає зображення) */
+  /* Photo placeholders (until the image loads) */
   --ph-1: #f1eee9;
   --ph-2: #eaf0ea;
   --ph-3: #f3ece6;
   --ph-4: #efedf5;
   --ph-5: #f3f3f1;
 
-  /* Розміри */
-  --column: 640px; /* максимальна ширина єдиної колонки */
-  --gutter: 20px; /* бічні відступи */
+  /* Sizes */
+  --column: 640px; /* max width of the single column */
+  --gutter: 20px; /* side padding */
   --radius-photo: 14px;
   --radius-thumb: 10px;
   --radius-btn: 10px;
   --radius-pill: 999px;
-  --touch: 44px; /* мінімальна ціль дотику */
+  --touch: 44px; /* minimum touch target */
 
-  /* Типографіка */
+  /* Typography */
   --fs-body: 16px;
   --lh-body: 1.6;
   --fs-small: 14px;
   --fs-xs: 13px;
-  --fs-lead: 17px; /* опис рецепта */
-  --fs-cook-step: 20px; /* текст кроку в режимі готування */
-  --fs-h1: clamp(46px, 12vw, 60px); /* назва рецепта, Caveat 600 */
+  --fs-lead: 17px; /* recipe description */
+  --fs-cook-step: 20px; /* step text in cook mode */
+  --fs-h1: clamp(46px, 12vw, 60px); /* recipe title, Caveat 600 */
   --fs-h2: 34px; /* «Інгредієнти», «Приготування», Caveat 600 */
-  --fs-list-title: 27px; /* назва в списку, Caveat 600 */
+  --fs-list-title: 27px; /* title in the list, Caveat 600 */
 
-  /* Рух */
-  --t-reveal: opacity 0.18s ease; /* поява прихованих елементів */
+  /* Motion */
+  --t-reveal: opacity 0.18s ease; /* hidden controls fading in */
   --t-slide: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
   --t-sheet: 0.24s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* Темна схема. Пастелі стають приглушеними темними, щоб світлий --text на них лишався
-   контрастним; спливаючі вікна (--surface) світліші за сторінку, бо тіні на темному не видно.
-   Контраст --text-faint ≥ 4.5:1 і на --bg, і на --surface. */
+/* Dark scheme. Pastels become muted dark tones so the light --text on them keeps its contrast;
+   popups (--surface) are lighter than the page because shadows vanish on dark.
+   --text-faint is at least 4.5:1 on both --bg and --surface. */
 @media (prefers-color-scheme: dark) {
   :root {
     --text: #eceae6;
@@ -129,8 +129,8 @@
   }
 }
 
-/* Приховані елементи: на пристроях з наведенням з'являються при hover/focus,
-   на сенсорних — видимі завжди (клас .touch-visible). */
+/* Hidden controls: with a pointer that hovers they appear on hover/focus;
+   on touch screens they stay visible (the .touch-visible class). */
 .reveal-on-hover {
   opacity: 0;
   transition: var(--t-reveal);
