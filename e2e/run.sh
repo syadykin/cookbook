@@ -6,6 +6,7 @@
 #
 #   make build && e2e/run.sh            # from the repo root
 #   CHROME=/path/to/chrome e2e/run.sh   # if Chrome is not /usr/bin/google-chrome
+#   E2E_WORK=/some/dir e2e/run.sh       # where data, server logs and screenshots go (CI keeps it)
 #
 # Screenshots of the walkthrough are left in the printed directory.
 set -euo pipefail
@@ -19,14 +20,23 @@ base="http://127.0.0.1:$port"
 [[ -x "$bin" ]] || { echo "build first: make build" >&2; exit 1; }
 [[ -d "$here/node_modules" ]] || (cd "$here" && npm install --no-audit --no-fund >/dev/null)
 
-work="$(mktemp -d -t cookbook-e2e.XXXXXX)"
+work="${E2E_WORK:-$(mktemp -d -t cookbook-e2e.XXXXXX)}"
+mkdir -p "$work"
 pid=""
-stop() { [[ -n "$pid" ]] && kill "$pid" 2>/dev/null && wait "$pid" 2>/dev/null; pid=""; }
+stop() {
+  if [[ -n "$pid" ]]; then
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+  fi
+  pid=""
+}
 trap stop EXIT
 
 # start <name> [extra env…]: a server on an empty data directory
 start() {
   local name="$1"; shift
+  # the checks rely on fixed ids, so a reused E2E_WORK must not keep an old database
+  rm -rf "$work/$name"
   mkdir -p "$work/$name"
   env GIN_MODE=release SERVER_LISTEN="127.0.0.1:$port" \
     DATABASE_PATH="$work/$name/db.sqlite3" PHOTOS_PATH="$work/$name/photos" \

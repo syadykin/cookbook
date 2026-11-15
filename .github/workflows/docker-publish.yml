@@ -1,18 +1,28 @@
 name: Publish Docker image
 
+# Runs when a GitHub release is published (not for drafts). The release's tag must be a semver
+# such as v1.2.3; the image gets 1.2.3, 1.2 and, unless it is a pre-release, latest.
+#
 # Requires, under Settings -> Secrets and variables -> Actions:
 #   variable DOCKERHUB_REPOSITORY - target repository, e.g. syadykin/cookbook
 #   secret   DOCKERHUB_USERNAME   - Docker Hub account name
 #   secret   DOCKERHUB_TOKEN      - Docker Hub access token with write permission
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
 
 jobs:
+  test:
+    name: Tests
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   publish:
     name: Build and push to Docker Hub
+    # an image is only published for a commit that passes the full check
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
