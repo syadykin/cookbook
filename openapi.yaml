@@ -380,7 +380,7 @@ components:
     Recipe:
       type: object
       description: One type for reading and writing; the server ignores readOnly fields.
-      required: [id, version, title, description, timeText, servings, tags, photos, ingredients, steps, createdAt, updatedAt]
+      required: [id, version, title, description, timeText, servings, tags, photos, ingredients, steps, notes, createdAt, updatedAt]
       properties:
         id: { type: integer, format: int64, readOnly: true }
         version:
@@ -421,6 +421,10 @@ components:
           type: array
           maxItems: 100
           items: { $ref: "#/components/schemas/Step" }
+        notes:
+          type: string
+          maxLength: 5000
+          description: Free-form notes shown after the steps. Plain text; line breaks are kept.
         createdAt: { type: string, format: date-time, readOnly: true }
         updatedAt: { type: string, format: date-time, readOnly: true }
 
