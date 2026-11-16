@@ -81,7 +81,7 @@ actions:
     photos:
       x-oapi-codegen-extra-tags:
         gorm: "foreignKey:RecipeId;constraint:OnDelete:SET NULL"
-    ingredients:
+    ingredientGroups:
       x-oapi-codegen-extra-tags:
         gorm: "foreignKey:RecipeId;constraint:OnDelete:CASCADE"
     steps:
@@ -105,6 +105,33 @@ actions:
     user:
       $ref: "#/components/schemas/User"
 
+# Ingredient groups
+- target: $.components.schemas.IngredientGroup.properties
+  update:
+    id:
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "primaryKey;autoIncrement"
+    name:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:''"
+    ingredients:
+      x-oapi-codegen-extra-tags:
+        gorm: "foreignKey:GroupId;constraint:OnDelete:CASCADE"
+    recipeId:
+      type: integer
+      format: int64
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;index:ingredient_groups_recipe_position,priority:1"
+    position:
+      type: integer
+      x-go-json-ignore: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;index:ingredient_groups_recipe_position,priority:2"
+
 # Ingredients
 - target: $.components.schemas.Ingredient.properties
   update:
@@ -118,19 +145,19 @@ actions:
     quantity:
       x-oapi-codegen-extra-tags:
         gorm: "not null;default:''"
-    recipeId:
+    groupId:
       type: integer
       format: int64
       x-go-json-ignore: true
       x-go-type-skip-optional-pointer: true
       x-oapi-codegen-extra-tags:
-        gorm: "not null;index:ingredients_recipe_position,priority:1"
+        gorm: "not null;index:ingredients_group_position,priority:1"
     position:
       type: integer
       x-go-json-ignore: true
       x-go-type-skip-optional-pointer: true
       x-oapi-codegen-extra-tags:
-        gorm: "not null;index:ingredients_recipe_position,priority:2"
+        gorm: "not null;index:ingredients_group_position,priority:2"
 
 # Steps
 - target: $.components.schemas.Step.properties

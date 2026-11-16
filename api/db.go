@@ -52,11 +52,14 @@ func InitDb(path string, debug bool) (*gorm.DB, error) {
 		&http.User{},
 		&http.Session{},
 		&http.Recipe{},
-		&http.Ingredient{},
+		&http.IngredientGroup{},
 		&http.Step{},
 		&http.Photo{},
 	); err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
+	}
+	if err := migrateIngredients(db); err != nil {
+		return nil, fmt.Errorf("migrate ingredients: %w", err)
 	}
 
 	if err := initSearch(db); err != nil {
@@ -64,6 +67,44 @@ func InitDb(path string, debug bool) (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+// migrateIngredients moves ingredients from recipes into groups. Databases created before groups
+// existed have ingredients.recipe_id; each such recipe gets one unnamed group holding its
+// ingredients, ids and order kept. SQLite cannot add a NOT NULL foreign key column in place, so
+// the table is rebuilt.
+func migrateIngredients(db *gorm.DB) error {
+	m := db.Migrator()
+	if !m.HasTable("ingredients") || m.HasColumn("ingredients", "group_id") {
+		return db.AutoMigrate(&http.Ingredient{})
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		for _, s := range []string{
+			`ALTER TABLE ingredients RENAME TO ingredients_ungrouped`,
+			// index names are global in SQLite and the renamed table keeps them
+			`DROP INDEX IF EXISTS ingredients_recipe_position`,
+		} {
+			if err := tx.Exec(s).Error; err != nil {
+				return err
+			}
+		}
+		if err := tx.AutoMigrate(&http.Ingredient{}); err != nil {
+			return err
+		}
+		for _, s := range []string{
+			`INSERT INTO ingredient_groups (recipe_id, position, name)
+				SELECT DISTINCT recipe_id, 0, '' FROM ingredients_ungrouped`,
+			`INSERT INTO ingredients (id, group_id, position, name, quantity)
+				SELECT i.id, g.id, i.position, i.name, i.quantity
+				FROM ingredients_ungrouped i JOIN ingredient_groups g ON g.recipe_id = i.recipe_id`,
+			`DROP TABLE ingredients_ungrouped`,
+		} {
+			if err := tx.Exec(s).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // initSearch keeps an FTS5 copy of each recipe's title and tags. FTS5's unicode61 tokenizer

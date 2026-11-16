@@ -1,4 +1,4 @@
-import type { TIngredient, TPhoto, TRecipe, TStep } from '@/lib/api';
+import type { TIngredient, TIngredientGroup, TPhoto, TRecipe, TStep } from '@/lib/api';
 import type { ParsedRecipe } from '@/lib/parseRecipe';
 
 /** Pastel pill colours, assigned to tags by position in a cycle (text on them stays --text). */
@@ -101,6 +101,17 @@ export function datesLine(created: string, updated: string): string {
   return c === u ? `Додано ${c}` : `Додано ${c} · змінено ${u}`;
 }
 
+/**
+ * What a group's heading says: its name, or «Інгредієнти №2» when it has none and there are
+ * several groups. A lone unnamed group gets no heading (empty string).
+ */
+export function groupTitle(name: string, index: number, count: number): string {
+  return name.trim() || (count > 1 ? `Інгредієнти №${index + 1}` : '');
+}
+
+export const ingredientCount = (groups: { ingredients: unknown[] }[]) =>
+  groups.reduce((n, g) => n + g.ingredients.length, 0);
+
 // ---------------------------------------------------------------------------------------------
 // Editor draft: the recipe as the edit form holds it. List items carry a client `key` so React
 // and drag-and-drop can track rows that have no server id yet.
@@ -116,6 +127,8 @@ export type DraftPhoto = {
 };
 
 export type DraftIngredient = { key: string; id?: number; name: string; quantity: string };
+
+export type DraftGroup = { key: string; id?: number; name: string; ingredients: DraftIngredient[] };
 
 export type DraftStep = {
   key: string;
@@ -133,7 +146,7 @@ export type Draft = {
   servings: number;
   tags: string[];
   photos: DraftPhoto[];
-  ingredients: DraftIngredient[];
+  ingredientGroups: DraftGroup[];
   steps: DraftStep[];
   notes: string;
 };
@@ -143,6 +156,14 @@ export const newKey = () => `k${Date.now().toString(36)}${(keySeq++).toString(36
 
 const photoToDraft = (p: TPhoto): DraftPhoto => ({ key: p.id, id: p.id, status: 'ready' });
 
+export const emptyIngredient = (): DraftIngredient => ({ key: newKey(), name: '', quantity: '' });
+
+export const emptyGroup = (): DraftGroup => ({
+  key: newKey(),
+  name: '',
+  ingredients: [emptyIngredient()],
+});
+
 export const emptyDraft = (): Draft => ({
   title: '',
   description: '',
@@ -150,7 +171,7 @@ export const emptyDraft = (): Draft => ({
   servings: 4,
   tags: [],
   photos: [],
-  ingredients: [{ key: newKey(), name: '', quantity: '' }],
+  ingredientGroups: [emptyGroup()],
   steps: [{ key: newKey(), text: '', timer: '', photos: [] }],
   notes: '',
 });
@@ -163,12 +184,21 @@ export function recipeToDraft(r: TRecipe): Draft {
     servings: r.servings,
     tags: [...r.tags],
     photos: r.photos.map(photoToDraft),
-    ingredients: r.ingredients.map((x: TIngredient) => ({
-      key: String(x.id ?? newKey()),
-      id: x.id,
-      name: x.name,
-      quantity: x.quantity,
-    })),
+    // the editor always shows at least one group to type into
+    ingredientGroups: r.ingredientGroups.length
+      ? r.ingredientGroups.map((g: TIngredientGroup) => ({
+          // ingredient keys are their ids; a group key must never collide with one
+          key: g.id ? `g${g.id}` : newKey(),
+          id: g.id,
+          name: g.name,
+          ingredients: g.ingredients.map((x: TIngredient) => ({
+            key: String(x.id ?? newKey()),
+            id: x.id,
+            name: x.name,
+            quantity: x.quantity,
+          })),
+        }))
+      : [emptyGroup()],
     steps: r.steps.map((s: TStep) => ({
       key: String(s.id ?? newKey()),
       id: s.id,
@@ -183,7 +213,10 @@ export function recipeToDraft(r: TRecipe): Draft {
 const uploadedPhotos = (photos: DraftPhoto[]) =>
   photos.filter((p) => p.id).map((p) => ({ id: p.id! }) as TPhoto);
 
-/** Request body for create/update; blank ingredient and step rows are dropped. */
+/**
+ * Request body for create/update; blank ingredient and step rows are dropped, and so (by the
+ * server) are groups left without ingredients.
+ */
 export function draftToRecipe(d: Draft, base?: TRecipe): TRecipe {
   return {
     id: base?.id ?? 0,
@@ -196,9 +229,15 @@ export function draftToRecipe(d: Draft, base?: TRecipe): TRecipe {
     servings: d.servings,
     tags: d.tags,
     photos: uploadedPhotos(d.photos),
-    ingredients: d.ingredients
-      .filter((x) => x.name.trim() || x.quantity.trim())
-      .map((x) => ({ id: x.id, name: x.name.trim(), quantity: x.quantity.trim() })),
+    ingredientGroups: d.ingredientGroups
+      .map((g) => ({
+        id: g.id,
+        name: g.name.trim(),
+        ingredients: g.ingredients
+          .filter((x) => x.name.trim() || x.quantity.trim())
+          .map((x) => ({ id: x.id, name: x.name.trim(), quantity: x.quantity.trim() })),
+      }))
+      .filter((g) => g.ingredients.length),
     steps: d.steps
       .filter((s) => s.text.trim() || s.photos.some((p) => p.id))
       .map((s) => ({
@@ -222,9 +261,13 @@ export function applyParsed(d: Draft, p: ParsedRecipe): Draft {
     title: p.title || d.title,
     timeText: p.timeText || d.timeText,
     servings: p.servings ?? d.servings,
-    ingredients: p.ingredients.length
-      ? p.ingredients.map((x) => ({ key: newKey(), ...x }))
-      : d.ingredients,
+    ingredientGroups: p.ingredientGroups.length
+      ? p.ingredientGroups.map((g) => ({
+          key: newKey(),
+          name: g.name,
+          ingredients: g.ingredients.map((x) => ({ key: newKey(), ...x })),
+        }))
+      : d.ingredientGroups,
     steps: p.steps.length
       ? p.steps.map((s) => ({
           key: newKey(),
@@ -246,10 +289,23 @@ export const isDraftEmpty = (d: Draft) => {
     !r.notes &&
     r.tags.length === 0 &&
     r.photos.length === 0 &&
-    r.ingredients.length === 0 &&
+    r.ingredientGroups.length === 0 &&
     r.steps.length === 0
   );
 };
+
+/**
+ * Drafts kept in localStorage by builds before ingredient groups have a flat `ingredients`
+ * list; it becomes the single unnamed group.
+ */
+export function upgradeDraft(d: Draft): Draft {
+  const legacy = d as Draft & { ingredients?: DraftIngredient[] };
+  if (d.ingredientGroups || !legacy.ingredients) {
+    return d;
+  }
+  const { ingredients, ...rest } = legacy;
+  return { ...rest, ingredientGroups: [{ key: newKey(), name: '', ingredients }] };
+}
 
 /** Server fields are stripped of readOnly parts the API ignores anyway, to keep requests small. */
 export const toRequest = (r: TRecipe): TRecipe => {

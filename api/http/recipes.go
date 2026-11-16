@@ -42,7 +42,8 @@ func (s *Server) loadRecipe(db *gorm.DB, userId, id int64) (Recipe, error) {
 	r := Recipe{}
 	err := db.
 		Preload("Photos", byPosition).
-		Preload("Ingredients", byPosition).
+		Preload("IngredientGroups", byPosition).
+		Preload("IngredientGroups.Ingredients", byPosition).
 		Preload("Steps", byPosition).
 		Preload("Steps.Photos", byPosition).
 		Where("user_id = ?", userId).
@@ -94,7 +95,7 @@ func (s *Server) saveRecipe(tx *gorm.DB, userId int64, existing *Recipe, in Reci
 			Tags:        tags,
 			Version:     1,
 		}
-		if err := tx.Omit("Photos", "Ingredients", "Steps", "User").Create(&r).Error; err != nil {
+		if err := tx.Omit("Photos", "IngredientGroups", "Steps", "User").Create(&r).Error; err != nil {
 			return 0, err
 		}
 		id = r.Id
@@ -120,7 +121,7 @@ func (s *Server) saveRecipe(tx *gorm.DB, userId int64, existing *Recipe, in Reci
 		}
 	}
 
-	if err := s.saveIngredients(tx, id, existing, in.Ingredients); err != nil {
+	if err := s.saveIngredientGroups(tx, id, existing, in.IngredientGroups); err != nil {
 		return 0, err
 	}
 	stepIds, err := s.saveSteps(tx, id, existing, in.Steps)
@@ -133,33 +134,74 @@ func (s *Server) saveRecipe(tx *gorm.DB, userId int64, existing *Recipe, in Reci
 	return id, nil
 }
 
-func (s *Server) saveIngredients(tx *gorm.DB, recipeId int64, existing *Recipe, in []Ingredient) error {
+const maxIngredients = 200
+
+// saveIngredientGroups drops groups without ingredients. An owned ingredient id is updated even
+// when it now sits in another group, so moving a row between groups keeps its id (crossed-out
+// rows on the client are keyed by it).
+func (s *Server) saveIngredientGroups(tx *gorm.DB, recipeId int64, existing *Recipe, in []IngredientGroup) error {
+	ownedGroups := map[int64]bool{}
 	owned := map[int64]bool{}
 	if existing != nil {
-		for _, x := range existing.Ingredients {
-			owned[x.Id] = true
+		for _, g := range existing.IngredientGroups {
+			ownedGroups[g.Id] = true
+			for _, x := range g.Ingredients {
+				owned[x.Id] = true
+			}
 		}
 	}
 
+	total := 0
+	for _, g := range in {
+		total += len(g.Ingredients)
+	}
+	if total > maxIngredients {
+		return unprocessable("ingredientGroups", fmt.Sprintf("Не більше %d інгредієнтів", maxIngredients))
+	}
+
+	keptGroups := []int64{}
 	kept := []int64{}
-	for i, x := range in {
-		row := Ingredient{RecipeId: recipeId, Position: i, Name: strings.TrimSpace(x.Name), Quantity: strings.TrimSpace(x.Quantity)}
-		if owned[x.Id] {
-			row.Id = x.Id
-			if err := tx.Model(&row).Select("position", "name", "quantity").Updates(&row).Error; err != nil {
+	for _, g := range in {
+		if len(g.Ingredients) == 0 {
+			continue
+		}
+		group := IngredientGroup{RecipeId: recipeId, Position: len(keptGroups), Name: strings.TrimSpace(g.Name)}
+		if ownedGroups[g.Id] {
+			group.Id = g.Id
+			if err := tx.Model(&group).Select("position", "name").Updates(&group).Error; err != nil {
 				return err
 			}
-		} else if err := tx.Create(&row).Error; err != nil {
+		} else if err := tx.Omit("Ingredients").Create(&group).Error; err != nil {
 			return err
 		}
-		kept = append(kept, row.Id)
+		keptGroups = append(keptGroups, group.Id)
+
+		for i, x := range g.Ingredients {
+			row := Ingredient{GroupId: group.Id, Position: i, Name: strings.TrimSpace(x.Name), Quantity: strings.TrimSpace(x.Quantity)}
+			if owned[x.Id] {
+				row.Id = x.Id
+				if err := tx.Model(&row).Select("group_id", "position", "name", "quantity").Updates(&row).Error; err != nil {
+					return err
+				}
+			} else if err := tx.Create(&row).Error; err != nil {
+				return err
+			}
+			kept = append(kept, row.Id)
+		}
 	}
 
-	q := tx.Where("recipe_id = ?", recipeId)
+	q := tx.Where("group_id IN (?)", tx.Model(&IngredientGroup{}).Select("id").Where("recipe_id = ?", recipeId))
 	if len(kept) > 0 {
 		q = q.Where("id NOT IN ?", kept)
 	}
-	return q.Delete(&Ingredient{}).Error
+	if err := q.Delete(&Ingredient{}).Error; err != nil {
+		return err
+	}
+	q = tx.Where("recipe_id = ?", recipeId)
+	if len(keptGroups) > 0 {
+		q = q.Where("id NOT IN ?", keptGroups)
+	}
+	return q.Delete(&IngredientGroup{}).Error
 }
 
 // saveSteps returns the saved step ids in input order, for attaching step photos.
@@ -363,7 +405,7 @@ func (s *Server) RecipesUpdate(ctx context.Context, req RecipesUpdateRequestObje
 }
 
 func (s *Server) RecipesDelete(ctx context.Context, req RecipesDeleteRequestObject) (RecipesDeleteResponseObject, error) {
-	// ingredients and steps cascade; photos are released (SET NULL) and collected later
+	// ingredient groups (with their ingredients) and steps cascade; photos are released (SET NULL) and collected later
 	res := s.db.Where("user_id = ?", s.UserId(ctx)).Delete(&Recipe{}, req.Id)
 	if res.Error != nil {
 		return nil, res.Error

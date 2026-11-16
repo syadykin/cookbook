@@ -91,7 +91,7 @@ export function RecipeView({ recipe, onEdit }: Props) {
           </section>
         )}
 
-        {recipe.ingredients.length > 0 && (
+        {recipe.ingredientGroups.length > 0 && (
           <section aria-labelledby="ing-h" className={cn('reveal-zone', styles.section)}>
             <div className={styles.sectionHead}>
               <SectionTitle id="ing-h">Інгредієнти</SectionTitle>
@@ -106,7 +106,7 @@ export function RecipeView({ recipe, onEdit }: Props) {
             </div>
             <IngredientList
               baseServings={recipe.servings}
-              ingredients={recipe.ingredients}
+              groups={recipe.ingredientGroups}
               recipeId={recipe.id}
               servings={servings.servings}
             />
@@ -175,7 +175,7 @@ export function RecipeView({ recipe, onEdit }: Props) {
           </section>
         )}
 
-        {recipe.ingredients.length === 0 && recipe.steps.length === 0 && (
+        {recipe.ingredientGroups.length === 0 && recipe.steps.length === 0 && (
           <p className={styles.emptyNote}>
             Рецепт поки порожній.{' '}
             <button className={styles.linkButton} type="button" onClick={onEdit}>

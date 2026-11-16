@@ -22,7 +22,7 @@ export function PasteRecipe({ open, onOpenChange, onParsed, replacing }: Props) 
 
   const parse = () => {
     const parsed = parseRecipe(text);
-    if (!parsed.ingredients.length && !parsed.steps.length) {
+    if (!parsed.ingredientGroups.length && !parsed.steps.length) {
       setError('Не вдалося знайти в тексті ні інгредієнтів, ні кроків.');
       return;
     }

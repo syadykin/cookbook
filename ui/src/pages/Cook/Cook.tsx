@@ -235,10 +235,10 @@ function IngredientsSlide({ recipe }: { recipe: TRecipe }) {
           onMore={servings.more}
         />
       </div>
-      {recipe.ingredients.length ? (
+      {recipe.ingredientGroups.length ? (
         <IngredientList
           baseServings={recipe.servings}
-          ingredients={recipe.ingredients}
+          groups={recipe.ingredientGroups}
           recipeId={recipe.id}
           servings={servings.servings}
           size="large"

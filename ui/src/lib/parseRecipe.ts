@@ -6,6 +6,11 @@
  *   • 1кг бараніни          ← bulleted (or "Інгредієнти:"-headed) ingredient lines
  *   • зира
  *
+ *   • цибуля — 2 шт.        ← or the name first, then a dash and the amount
+ *
+ *   Для соусу:              ← a short line ending in a colon, followed by ingredient lines,
+ *   • 2 ст. л. соєвого        starts a named group
+ *
  *   Paragraph per step, or numbered lines ("1.", "2)", "Крок 3:")
  *
  * Everything is a best guess for the user to review in the editor before saving; nothing here is
@@ -16,7 +21,7 @@ export type ParsedRecipe = {
   title: string;
   timeText: string;
   servings?: number;
-  ingredients: { name: string; quantity: string }[];
+  ingredientGroups: { name: string; ingredients: { name: string; quantity: string }[] }[];
   steps: { text: string; timerMinutes?: number }[];
 };
 
@@ -24,6 +29,7 @@ const BULLET = /^\s*[•●▪◦·*\-–—]\s*/;
 const NUMBERED = /^\s*(?:крок\s*)?\d{1,2}\s*[.):]\s*/i;
 const INGREDIENTS_HEADER = /^\s*(інгредієнти|ингредиенты|продукти|склад)\s*:?\s*$/i;
 const STEPS_HEADER = /^\s*(приготування|спосіб приготування|приготовление|як готувати)\s*:?\s*$/i;
+const GROUP_HEADER = /^\s*([^\d•●▪◦·*\-–—].{0,39}?)\s*:\s*$/;
 const SERVINGS = /(?:на\s+)?(\d{1,2})\s+порці[йюї]|порці[йї]\s*:\s*(\d{1,2})/i;
 const TIME_LINE = /^\s*(?:час(?:\s+приготування)?|время)\s*:\s*(.+)$/i;
 
@@ -49,19 +55,17 @@ const tidy = (s: string) => s.replace(/\s+/g, ' ').trim();
 const fraction = (s: string) =>
   ({ '½': '0,5', '¼': '0,25', '¾': '0,75' })[s] ?? s.replace('.', ',');
 
-/** «1кг бараніни» → { name: «Бараніни», quantity: «1 кг» }; no leading number → no quantity. */
-export function parseIngredient(line: string): { name: string; quantity: string } {
-  const text = tidy(line.replace(BULLET, ''));
-  const m = new RegExp(`^(${NUMBER})(?:\\s*[-–]\\s*(${NUMBER}))?\\s*`).exec(text);
-  if (!m) {
-    // «сіль за смаком» / «зира»: a trailing «за смаком» is the quantity
-    const toTaste = /^(.*?)[\s,—–-]*(за смаком|по смаку|дрібка|щіпка)$/iu.exec(text);
-    if (toTaste && toTaste[1]) {
-      return { name: upperFirst(toTaste[1]), quantity: toTaste[2]!.toLowerCase() };
-    }
-    return { name: upperFirst(text), quantity: '' };
-  }
+const AMOUNT = new RegExp(`^(${NUMBER})(?:\\s*[-–]\\s*(${NUMBER}))?\\s*`);
 
+/**
+ * «2 шт. цибулі» → { amount: «2 шт», rest: «цибулі» }: a leading number (or range) and the unit
+ * right after it; null when the text does not start with a number.
+ */
+function leadingAmount(text: string): { amount: string; rest: string } | null {
+  const m = AMOUNT.exec(text);
+  if (!m) {
+    return null;
+  }
   let amount = fraction(m[1]!);
   if (m[2]) {
     amount += '-' + fraction(m[2]);
@@ -76,8 +80,43 @@ export function parseIngredient(line: string): { name: string; quantity: string 
       break;
     }
   }
+  return { amount, rest };
+}
 
-  return { name: upperFirst(tidy(rest)) || upperFirst(text), quantity: amount };
+/**
+ * The name, a dash, then the amount: «цибуля — 2 шт.». A hyphen counts only with a space before
+ * it, so «дев-зіра» is not split.
+ */
+const NAME_DASH_AMOUNT = new RegExp(`^(.+?)(?:\\s+[-–—]|\\s*[–—])\\s*((?:${NUMBER}).*)$`, 'u');
+
+/**
+ * «1кг бараніни» → { name: «Бараніни», quantity: «1 кг» }; «фіолетова цибуля — 2 шт.» →
+ * { name: «Фіолетова цибуля», quantity: «2 шт» }; no number in either place → no quantity.
+ */
+export function parseIngredient(line: string): { name: string; quantity: string } {
+  const text = tidy(line.replace(BULLET, ''));
+  const lead = leadingAmount(text);
+  if (lead) {
+    return { name: upperFirst(tidy(lead.rest)) || upperFirst(text), quantity: lead.amount };
+  }
+
+  const dash = NAME_DASH_AMOUNT.exec(text);
+  const tail = dash ? leadingAmount(dash[2]!) : null;
+  if (dash && tail) {
+    // whatever follows the unit («— 2 шт. середні») still describes the ingredient
+    const extra = tidy(tail.rest.replace(/[\s.,;]+$/, ''));
+    return {
+      name: upperFirst(extra ? `${tidy(dash[1]!)}, ${extra}` : tidy(dash[1]!)),
+      quantity: tail.amount,
+    };
+  }
+
+  // «сіль за смаком» / «зира»: a trailing «за смаком» is the quantity
+  const toTaste = /^(.*?)[\s,—–-]*(за смаком|по смаку|дрібка|щіпка)$/iu.exec(text);
+  if (toTaste && toTaste[1]) {
+    return { name: upperFirst(toTaste[1]), quantity: toTaste[2]!.toLowerCase() };
+  }
+  return { name: upperFirst(text), quantity: '' };
 }
 
 const DURATION = new RegExp(
@@ -123,7 +162,23 @@ const looksLikeTitle = (line: string) =>
   !/^\d/.test(line.trim());
 
 export function parseRecipe(input: string): ParsedRecipe {
-  const result: ParsedRecipe = { title: '', timeText: '', ingredients: [], steps: [] };
+  const result: ParsedRecipe = { title: '', timeText: '', ingredientGroups: [], steps: [] };
+  const groups = result.ingredientGroups;
+  const addIngredient = (line: string) => {
+    if (!groups.length) {
+      groups.push({ name: '', ingredients: [] });
+    }
+    groups[groups.length - 1]!.ingredients.push(parseIngredient(line));
+  };
+  const startGroup = (name: string) => {
+    const last = groups[groups.length - 1];
+    // a header right after another (or before any row) names the group still empty
+    if (last && !last.ingredients.length) {
+      last.name = name;
+    } else {
+      groups.push({ name, ingredients: [] });
+    }
+  };
   const lines = input.replace(/\r\n?/g, '\n').split('\n');
 
   // paragraphs: runs of non-empty lines
@@ -158,12 +213,12 @@ export function parseRecipe(input: string): ParsedRecipe {
   let mode: Mode = 'auto';
   const stepTexts: string[] = [];
 
-  for (const block of blocks) {
+  for (const [bi, block] of blocks.entries()) {
     let addedIngredients = false;
     // no bullets and no header, but several short lines that are not sentences: a list
     const plainList =
       mode === 'auto' &&
-      result.ingredients.length === 0 &&
+      groups.length === 0 &&
       stepTexts.length === 0 &&
       block.length >= 2 &&
       block.every((l) => l.length <= 60 && !/[.:;!?]$/.test(l) && !NUMBERED.test(l));
@@ -175,7 +230,7 @@ export function parseRecipe(input: string): ParsedRecipe {
       }
     };
 
-    for (const line of block) {
+    for (const [li, line] of block.entries()) {
       if (INGREDIENTS_HEADER.test(line)) {
         flush();
         mode = 'ingredients';
@@ -184,6 +239,21 @@ export function parseRecipe(input: string): ParsedRecipe {
       if (STEPS_HEADER.test(line)) {
         flush();
         mode = 'steps';
+        continue;
+      }
+      // «Тісто:» / «Для начинки:» — only when ingredient lines follow (the header may stand alone
+      // with a blank line after it), so a step ending in a colon stays a step
+      const group = GROUP_HEADER.exec(line);
+      const next = li + 1 < block.length ? block[li + 1] : blocks[bi + 1]?.[0];
+      if (
+        group &&
+        mode !== 'steps' &&
+        next !== undefined &&
+        (BULLET.test(next) || (mode === 'ingredients' && !NUMBERED.test(next)))
+      ) {
+        flush();
+        startGroup(upperFirst(tidy(group[1]!)));
+        mode = 'ingredients';
         continue;
       }
       const time = TIME_LINE.exec(line);
@@ -204,7 +274,7 @@ export function parseRecipe(input: string): ParsedRecipe {
         plainList
       ) {
         flush();
-        result.ingredients.push(parseIngredient(line));
+        addIngredient(line);
         addedIngredients = true;
         continue;
       }

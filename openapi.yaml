@@ -152,9 +152,10 @@ paths:
       tags: [recipes]
       summary: Save a whole recipe
       description: |
-        Replaces fields, tags, ingredients, steps and photos. Array order is display order.
-        Ingredients and steps with an id are updated, without one are created, and missing ones are
-        deleted. Photos are referenced by id (read-only fields are ignored); photos removed from the
+        Replaces fields, tags, ingredient groups, steps and photos. Array order is display order.
+        Ingredient groups, ingredients and steps with an id are updated, without one are created,
+        and missing ones are deleted; an ingredient may move to another group of the same recipe.
+        Groups without ingredients are dropped. At most 200 ingredients across all groups (422). Photos are referenced by id (read-only fields are ignored); photos removed from the
         recipe are deleted later by a background job.
       parameters:
         - name: If-Match
@@ -357,6 +358,25 @@ components:
           example: "500 г"
           description: Free text. If it starts with a number (comma or dot decimal), the client scales it by servings.
 
+    IngredientGroup:
+      type: object
+      required: [name, ingredients]
+      description: Ingredients for one part of the dish (dough, filling…).
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Absent for a new group.
+        name:
+          type: string
+          maxLength: 100
+          example: "Тісто"
+          description: Optional; the client numbers unnamed groups when there is more than one.
+        ingredients:
+          type: array
+          maxItems: 200
+          items: { $ref: "#/components/schemas/Ingredient" }
+
     Step:
       type: object
       required: [text, photos]
@@ -380,7 +400,7 @@ components:
     Recipe:
       type: object
       description: One type for reading and writing; the server ignores readOnly fields.
-      required: [id, version, title, description, timeText, servings, tags, photos, ingredients, steps, notes, createdAt, updatedAt]
+      required: [id, version, title, description, timeText, servings, tags, photos, ingredientGroups, steps, notes, createdAt, updatedAt]
       properties:
         id: { type: integer, format: int64, readOnly: true }
         version:
@@ -413,10 +433,10 @@ components:
           maxItems: 20
           description: The first photo is the cover.
           items: { $ref: "#/components/schemas/Photo" }
-        ingredients:
+        ingredientGroups:
           type: array
-          maxItems: 200
-          items: { $ref: "#/components/schemas/Ingredient" }
+          maxItems: 20
+          items: { $ref: "#/components/schemas/IngredientGroup" }
         steps:
           type: array
           maxItems: 100

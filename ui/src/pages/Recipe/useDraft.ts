@@ -6,14 +6,18 @@ import { ApiError, type TRecipe } from '@/lib/api';
 import type { ParsedRecipe } from '@/lib/parseRecipe';
 import {
   type Draft,
+  type DraftGroup,
   type DraftIngredient,
   type DraftPhoto,
   type DraftStep,
   applyParsed,
   emptyDraft,
+  emptyGroup,
+  emptyIngredient,
   newKey,
   normalizeTag,
   recipeToDraft,
+  upgradeDraft,
 } from '@/lib/recipe';
 
 /** 'recipe' for the recipe's own photos, otherwise a step's key. */
@@ -56,7 +60,7 @@ export function useDraft(recipe?: TRecipe) {
   const [initial] = useState(() => {
     const stored = storage.get<Stored>(key);
     if (stored) {
-      return { draft: stored.draft, baseVersion: stored.baseVersion, restored: true };
+      return { draft: upgradeDraft(stored.draft), baseVersion: stored.baseVersion, restored: true };
     }
     return {
       draft: recipe ? recipeToDraft(recipe) : emptyDraft(),
@@ -128,10 +132,13 @@ export function useDraft(recipe?: TRecipe) {
   const removePhoto = (photoKey: string) =>
     update((d) => mapPhotos(d, (ps) => ps.filter((p) => p.key !== photoKey)));
 
+  const mapGroups = (fn: (g: DraftGroup) => DraftGroup) =>
+    update((d) => ({ ...d, ingredientGroups: d.ingredientGroups.map(fn) }));
+
   const patchIngredient = (k: string, patch: Partial<DraftIngredient>) =>
-    update((d) => ({
-      ...d,
-      ingredients: d.ingredients.map((x) => (x.key === k ? { ...x, ...patch } : x)),
+    mapGroups((g) => ({
+      ...g,
+      ingredients: g.ingredients.map((x) => (x.key === k ? { ...x, ...patch } : x)),
     }));
 
   const patchStep = (k: string, patch: Partial<DraftStep>) =>
@@ -156,15 +163,31 @@ export function useDraft(recipe?: TRecipe) {
     },
     removeTag: (t: string) => update((d) => ({ ...d, tags: d.tags.filter((x) => x !== t) })),
 
-    addIngredient: () => {
-      const row = { key: newKey(), name: '', quantity: '' };
-      update((d) => ({ ...d, ingredients: [...d.ingredients, row] }));
+    addGroup: () => {
+      const group = emptyGroup();
+      update((d) => ({ ...d, ingredientGroups: [...d.ingredientGroups, group] }));
+      return group.key;
+    },
+    renameGroup: (k: string, name: string) => mapGroups((g) => (g.key === k ? { ...g, name } : g)),
+    /** drops the group with its ingredients; the last group is only emptied */
+    removeGroup: (k: string) =>
+      update((d) => {
+        const rest = d.ingredientGroups.filter((g) => g.key !== k);
+        return { ...d, ingredientGroups: rest.length ? rest : [emptyGroup()] };
+      }),
+
+    /** returns the new row's key, for focusing it */
+    addIngredient: (groupKey: string) => {
+      const row = emptyIngredient();
+      mapGroups((g) => (g.key === groupKey ? { ...g, ingredients: [...g.ingredients, row] } : g));
       return row.key;
     },
     patchIngredient,
     removeIngredient: (k: string) =>
-      update((d) => ({ ...d, ingredients: d.ingredients.filter((x) => x.key !== k) })),
-    reorderIngredients: (rows: DraftIngredient[]) => update((d) => ({ ...d, ingredients: rows })),
+      mapGroups((g) => ({ ...g, ingredients: g.ingredients.filter((x) => x.key !== k) })),
+    /** after a drag: rows reordered within or moved between groups */
+    setIngredientGroups: (groups: DraftGroup[]) =>
+      update((d) => ({ ...d, ingredientGroups: groups })),
 
     addStep: () => {
       const row = { key: newKey(), text: '', timer: '', photos: [] };

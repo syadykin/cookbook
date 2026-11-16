@@ -63,6 +63,11 @@ From `ui/`: `npm run lint`, `npm run prettier`, `npm run schema`, `npx tsc -b`.
 - Tags: JSON array column on `recipes` (no tag tables). Counting/filtering via `json_each`.
 - Ingredients/steps: has-many with hidden `position` taken from array order. PUT keeps child ids
   stable (update by id, create without id, delete missing) — running timers are keyed by step id.
+- Ingredients sit in `ingredientGroups` (dough, filling…): recipe → groups → ingredients. An
+  ingredient may move between groups of its recipe and keep its id (crossed-out rows are keyed by
+  it); groups without ingredients are dropped on save. The UI names an unnamed group
+  «Інгредієнти №N» only when there are several (`groupTitle`). `migrateIngredients` in
+  `api/db.go` moved pre-group databases into one unnamed group per recipe (e2e: `test_migration`).
 - Photos belong to at most one recipe or step (hidden `recipe_id`/`step_id`/`position`,
   `ON DELETE SET NULL`). Unowned photos older than 24h are deleted by a job. Files are served via
   `GET /api/photos/{id}?w=` with an ownership check; the client builds the URL.
