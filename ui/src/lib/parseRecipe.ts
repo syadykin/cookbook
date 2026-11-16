@@ -6,6 +6,8 @@
  *   • 1кг бараніни          ← bulleted (or "Інгредієнти:"-headed) ingredient lines
  *   • зира
  *
+ *   • цибуля — 2 шт.        ← or the name first, then a dash and the amount
+ *
  *   Для соусу:              ← a short line ending in a colon, followed by ingredient lines,
  *   • 2 ст. л. соєвого        starts a named group
  *
@@ -53,19 +55,17 @@ const tidy = (s: string) => s.replace(/\s+/g, ' ').trim();
 const fraction = (s: string) =>
   ({ '½': '0,5', '¼': '0,25', '¾': '0,75' })[s] ?? s.replace('.', ',');
 
-/** «1кг бараніни» → { name: «Бараніни», quantity: «1 кг» }; no leading number → no quantity. */
-export function parseIngredient(line: string): { name: string; quantity: string } {
-  const text = tidy(line.replace(BULLET, ''));
-  const m = new RegExp(`^(${NUMBER})(?:\\s*[-–]\\s*(${NUMBER}))?\\s*`).exec(text);
-  if (!m) {
-    // «сіль за смаком» / «зира»: a trailing «за смаком» is the quantity
-    const toTaste = /^(.*?)[\s,—–-]*(за смаком|по смаку|дрібка|щіпка)$/iu.exec(text);
-    if (toTaste && toTaste[1]) {
-      return { name: upperFirst(toTaste[1]), quantity: toTaste[2]!.toLowerCase() };
-    }
-    return { name: upperFirst(text), quantity: '' };
-  }
+const AMOUNT = new RegExp(`^(${NUMBER})(?:\\s*[-–]\\s*(${NUMBER}))?\\s*`);
 
+/**
+ * «2 шт. цибулі» → { amount: «2 шт», rest: «цибулі» }: a leading number (or range) and the unit
+ * right after it; null when the text does not start with a number.
+ */
+function leadingAmount(text: string): { amount: string; rest: string } | null {
+  const m = AMOUNT.exec(text);
+  if (!m) {
+    return null;
+  }
   let amount = fraction(m[1]!);
   if (m[2]) {
     amount += '-' + fraction(m[2]);
@@ -80,8 +80,43 @@ export function parseIngredient(line: string): { name: string; quantity: string 
       break;
     }
   }
+  return { amount, rest };
+}
 
-  return { name: upperFirst(tidy(rest)) || upperFirst(text), quantity: amount };
+/**
+ * The name, a dash, then the amount: «цибуля — 2 шт.». A hyphen counts only with a space before
+ * it, so «дев-зіра» is not split.
+ */
+const NAME_DASH_AMOUNT = new RegExp(`^(.+?)(?:\\s+[-–—]|\\s*[–—])\\s*((?:${NUMBER}).*)$`, 'u');
+
+/**
+ * «1кг бараніни» → { name: «Бараніни», quantity: «1 кг» }; «фіолетова цибуля — 2 шт.» →
+ * { name: «Фіолетова цибуля», quantity: «2 шт» }; no number in either place → no quantity.
+ */
+export function parseIngredient(line: string): { name: string; quantity: string } {
+  const text = tidy(line.replace(BULLET, ''));
+  const lead = leadingAmount(text);
+  if (lead) {
+    return { name: upperFirst(tidy(lead.rest)) || upperFirst(text), quantity: lead.amount };
+  }
+
+  const dash = NAME_DASH_AMOUNT.exec(text);
+  const tail = dash ? leadingAmount(dash[2]!) : null;
+  if (dash && tail) {
+    // whatever follows the unit («— 2 шт. середні») still describes the ingredient
+    const extra = tidy(tail.rest.replace(/[\s.,;]+$/, ''));
+    return {
+      name: upperFirst(extra ? `${tidy(dash[1]!)}, ${extra}` : tidy(dash[1]!)),
+      quantity: tail.amount,
+    };
+  }
+
+  // «сіль за смаком» / «зира»: a trailing «за смаком» is the quantity
+  const toTaste = /^(.*?)[\s,—–-]*(за смаком|по смаку|дрібка|щіпка)$/iu.exec(text);
+  if (toTaste && toTaste[1]) {
+    return { name: upperFirst(toTaste[1]), quantity: toTaste[2]!.toLowerCase() };
+  }
+  return { name: upperFirst(text), quantity: '' };
 }
 
 const DURATION = new RegExp(

@@ -407,6 +407,12 @@ check(
   JSON.stringify(pastedGroups.map((g) => [g.name, g.rows.length])) === '[["Тісто",4],["Для начинки",3]]',
   JSON.stringify(pastedGroups),
 );
+const filling = await page.$$eval('[data-group="1"] li', (ls) => ls.map((l) => [...l.querySelectorAll('input')].map((i) => i.value).join('|')));
+check(
+  'quantity after a dash',
+  JSON.stringify(filling) === '["Вишні без кісточок|600 г","Цукор|3 ст. л.","Крохмалю|1 ст. л."]',
+  JSON.stringify(filling),
+);
 await page.screenshot({ path: `${out}/16-paste-groups.png` });
 
 check('no page errors', errors.length === 0, errors.join(' | '));
