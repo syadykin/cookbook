@@ -6,6 +6,9 @@
  *   • 1кг бараніни          ← bulleted (or "Інгредієнти:"-headed) ingredient lines
  *   • зира
  *
+ *   Для соусу:              ← a short line ending in a colon, followed by ingredient lines,
+ *   • 2 ст. л. соєвого        starts a named group
+ *
  *   Paragraph per step, or numbered lines ("1.", "2)", "Крок 3:")
  *
  * Everything is a best guess for the user to review in the editor before saving; nothing here is
@@ -16,7 +19,7 @@ export type ParsedRecipe = {
   title: string;
   timeText: string;
   servings?: number;
-  ingredients: { name: string; quantity: string }[];
+  ingredientGroups: { name: string; ingredients: { name: string; quantity: string }[] }[];
   steps: { text: string; timerMinutes?: number }[];
 };
 
@@ -24,6 +27,7 @@ const BULLET = /^\s*[•●▪◦·*\-–—]\s*/;
 const NUMBERED = /^\s*(?:крок\s*)?\d{1,2}\s*[.):]\s*/i;
 const INGREDIENTS_HEADER = /^\s*(інгредієнти|ингредиенты|продукти|склад)\s*:?\s*$/i;
 const STEPS_HEADER = /^\s*(приготування|спосіб приготування|приготовление|як готувати)\s*:?\s*$/i;
+const GROUP_HEADER = /^\s*([^\d•●▪◦·*\-–—].{0,39}?)\s*:\s*$/;
 const SERVINGS = /(?:на\s+)?(\d{1,2})\s+порці[йюї]|порці[йї]\s*:\s*(\d{1,2})/i;
 const TIME_LINE = /^\s*(?:час(?:\s+приготування)?|время)\s*:\s*(.+)$/i;
 
@@ -123,7 +127,23 @@ const looksLikeTitle = (line: string) =>
   !/^\d/.test(line.trim());
 
 export function parseRecipe(input: string): ParsedRecipe {
-  const result: ParsedRecipe = { title: '', timeText: '', ingredients: [], steps: [] };
+  const result: ParsedRecipe = { title: '', timeText: '', ingredientGroups: [], steps: [] };
+  const groups = result.ingredientGroups;
+  const addIngredient = (line: string) => {
+    if (!groups.length) {
+      groups.push({ name: '', ingredients: [] });
+    }
+    groups[groups.length - 1]!.ingredients.push(parseIngredient(line));
+  };
+  const startGroup = (name: string) => {
+    const last = groups[groups.length - 1];
+    // a header right after another (or before any row) names the group still empty
+    if (last && !last.ingredients.length) {
+      last.name = name;
+    } else {
+      groups.push({ name, ingredients: [] });
+    }
+  };
   const lines = input.replace(/\r\n?/g, '\n').split('\n');
 
   // paragraphs: runs of non-empty lines
@@ -158,12 +178,12 @@ export function parseRecipe(input: string): ParsedRecipe {
   let mode: Mode = 'auto';
   const stepTexts: string[] = [];
 
-  for (const block of blocks) {
+  for (const [bi, block] of blocks.entries()) {
     let addedIngredients = false;
     // no bullets and no header, but several short lines that are not sentences: a list
     const plainList =
       mode === 'auto' &&
-      result.ingredients.length === 0 &&
+      groups.length === 0 &&
       stepTexts.length === 0 &&
       block.length >= 2 &&
       block.every((l) => l.length <= 60 && !/[.:;!?]$/.test(l) && !NUMBERED.test(l));
@@ -175,7 +195,7 @@ export function parseRecipe(input: string): ParsedRecipe {
       }
     };
 
-    for (const line of block) {
+    for (const [li, line] of block.entries()) {
       if (INGREDIENTS_HEADER.test(line)) {
         flush();
         mode = 'ingredients';
@@ -184,6 +204,21 @@ export function parseRecipe(input: string): ParsedRecipe {
       if (STEPS_HEADER.test(line)) {
         flush();
         mode = 'steps';
+        continue;
+      }
+      // «Тісто:» / «Для начинки:» — only when ingredient lines follow (the header may stand alone
+      // with a blank line after it), so a step ending in a colon stays a step
+      const group = GROUP_HEADER.exec(line);
+      const next = li + 1 < block.length ? block[li + 1] : blocks[bi + 1]?.[0];
+      if (
+        group &&
+        mode !== 'steps' &&
+        next !== undefined &&
+        (BULLET.test(next) || (mode === 'ingredients' && !NUMBERED.test(next)))
+      ) {
+        flush();
+        startGroup(upperFirst(tidy(group[1]!)));
+        mode = 'ingredients';
         continue;
       }
       const time = TIME_LINE.exec(line);
@@ -204,7 +239,7 @@ export function parseRecipe(input: string): ParsedRecipe {
         plainList
       ) {
         flush();
-        result.ingredients.push(parseIngredient(line));
+        addIngredient(line);
         addedIngredients = true;
         continue;
       }

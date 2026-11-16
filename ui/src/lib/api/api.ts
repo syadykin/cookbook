@@ -16,6 +16,7 @@ export type TAuthProvider = components['schemas']['AuthProvider'];
 export type TRecipe = components['schemas']['Recipe'];
 export type TRecipeSummary = components['schemas']['RecipeSummary'];
 export type TIngredient = components['schemas']['Ingredient'];
+export type TIngredientGroup = components['schemas']['IngredientGroup'];
 export type TStep = components['schemas']['Step'];
 export type TPhoto = components['schemas']['Photo'];
 export type TTagCount = components['schemas']['TagCount'];

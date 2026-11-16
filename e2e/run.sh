@@ -65,6 +65,12 @@ start recipes
 python3 "$here/api/test_recipes.py" "$base" || fail "API recipes"
 stop
 
+echo "== API: migration"
+python3 "$here/api/legacy_db.py" "$work/legacy.sqlite3"
+start migration DATABASE_PATH="$work/legacy.sqlite3"
+python3 "$here/api/test_migration.py" "$base" || fail "API migration"
+stop
+
 echo "== API: photos"
 # a 1 MB limit lets the fixtures exercise 413 without huge files
 start photos PHOTOS_MAX_UPLOAD_MB=1

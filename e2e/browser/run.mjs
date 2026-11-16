@@ -217,8 +217,65 @@ await sleep(500);
 const savedTitle = await page.$eval('h1', (h) => h.textContent);
 check('saved over newer version', savedTitle === 'Сирники бабусині' && !page.url().includes('edit'), savedTitle);
 const api = await page.evaluate(async () => (await fetch('/api/recipes/1')).json());
-check('server has new tag, ingredient, photo, notes', api.tags.includes('улюблене') && api.ingredients.some((i) => i.name === 'Ванільний цукор') && api.photos.length === 3 && api.notes === 'Подавати теплими.', JSON.stringify({ t: api.tags, p: api.photos.length, n: api.notes }));
+check('server has new tag, ingredient, photo, notes', api.tags.includes('улюблене') && api.ingredientGroups[0].ingredients.some((i) => i.name === 'Ванільний цукор') && api.photos.length === 3 && api.notes === 'Подавати теплими.', JSON.stringify({ t: api.tags, p: api.photos.length, n: api.notes }));
 check('draft cleared after save', (await page.evaluate(() => localStorage.getItem('draft:recipe:1'))) === null);
+check('lone unnamed group has no heading', (await page.$$('section[aria-labelledby="ing-h"] h3')).length === 0);
+
+// ingredient groups (Борщ is seeded with an unnamed group and «Зажарка»)
+await page.goto(base + '/r/2', { waitUntil: 'networkidle0' });
+const groupHeadings = () => page.$$eval('section[aria-labelledby="ing-h"] h3', (hs) => hs.map((h) => h.textContent));
+check('group headings, the unnamed one numbered', JSON.stringify(await groupHeadings()) === '["Інгредієнти №1","Зажарка"]', JSON.stringify(await groupHeadings()));
+await page.screenshot({ path: `${out}/9a-groups.png` });
+const borshch = await page.evaluate(async () => (await fetch('/api/recipes/2')).json());
+await page.click('button[aria-label="Редагувати рецепт"]');
+await page.waitForSelector('input[placeholder="Назва рецепта"]');
+const editorGroups = () =>
+  page.$$eval('[data-group]', (gs) =>
+    gs.map((g) => ({
+      name: g.querySelector('input[id^="grp-"]').value,
+      placeholder: g.querySelector('input[id^="grp-"]').placeholder,
+      rows: [...g.querySelectorAll('input[placeholder="Інгредієнт"]')].map((i) => i.value),
+    })),
+  );
+let eg = await editorGroups();
+check('editor numbers the unnamed group', eg[0].placeholder === 'Інгредієнти №1' && eg[1].name === 'Зажарка', JSON.stringify(eg));
+await page.click('button::-p-text(Додати групу)');
+await sleep(100);
+check('new group name focused', await page.evaluate(() => document.activeElement?.id.startsWith('grp-')));
+await page.keyboard.type('Подача');
+await page.type('[data-group="2"] input[placeholder="Інгредієнт"]', 'Сметана');
+// drag «Буряк» (group 1) between «Морква» and «Цибуля» (group 2)
+const handle = await (await page.$('[data-group="0"] li')).$('button[aria-label^="Перетягнути"]');
+await handle.evaluate((b) => b.scrollIntoView({ block: 'center' }));
+const hb = await handle.boundingBox();
+const target = await (await page.$$('[data-group="1"] li'))[1].boundingBox();
+const hx = hb.x + hb.width / 2;
+const hy = hb.y + hb.height / 2;
+// just above the boundary: nearest to «Морква», below its middle
+const dy = target.y - 3 - hy;
+await page.mouse.move(hx, hy);
+await page.mouse.down();
+for (let i = 1; i <= 20; i++) {
+  await page.mouse.move(hx, hy + (dy * i) / 20);
+  await sleep(20);
+}
+await sleep(200);
+await page.mouse.up();
+await sleep(400);
+eg = await editorGroups();
+check('ingredient dragged into another group', JSON.stringify(eg.map((g) => g.rows)) === '[["Картопля"],["Морква","Буряк","Цибуля"],["Сметана"]]', JSON.stringify(eg.map((g) => g.rows)));
+await page.screenshot({ path: `${out}/9b-groups-edit.png` });
+await page.click('button::-p-text(Готово)');
+await page.waitForFunction(() => !location.search.includes('edit'), { timeout: 5000 }).catch(() => null);
+await sleep(400);
+const savedGroups = (await page.evaluate(async () => (await fetch('/api/recipes/2')).json())).ingredientGroups;
+const beet = (gs) => gs.flatMap((g) => g.ingredients).find((i) => i.name === 'Буряк')?.id;
+check(
+  'groups saved, moved ingredient kept its id',
+  JSON.stringify(savedGroups.map((g) => g.name)) === '["","Зажарка","Подача"]' && savedGroups[1].ingredients[1].name === 'Буряк' && beet(savedGroups) === beet(borshch.ingredientGroups),
+  JSON.stringify(savedGroups),
+);
+check('headings after save', JSON.stringify(await groupHeadings()) === '["Інгредієнти №1","Зажарка","Подача"]', JSON.stringify(await groupHeadings()));
 
 // new recipe
 await page.goto(base + '/r/new', { waitUntil: 'networkidle0' });
@@ -325,10 +382,32 @@ await page.waitForFunction(() => /\/r\/\d+$/.test(location.pathname), { timeout:
 const savedPlov = await page.evaluate(async () => (await fetch('/api/recipes/' + location.pathname.split('/').pop())).json());
 check(
   'parsed recipe saved',
-  savedPlov.title === 'Плов' && savedPlov.ingredients.length === 11 && savedPlov.steps[1].timerSeconds === 3600 &&
+  savedPlov.title === 'Плов' && savedPlov.ingredientGroups.length === 1 && savedPlov.ingredientGroups[0].ingredients.length === 11 && savedPlov.steps[1].timerSeconds === 3600 &&
     savedPlov.photos.length === 1 && savedPlov.steps[1].photos.length === 1,
-  JSON.stringify({ t: savedPlov.title, i: savedPlov.ingredients?.length, p: savedPlov.photos?.length, s: savedPlov.steps?.[1] }),
+  JSON.stringify({ t: savedPlov.title, i: savedPlov.ingredientGroups?.length, p: savedPlov.photos?.length, s: savedPlov.steps?.[1] }),
 );
+
+// «Тісто:» / «Для начинки:» headers in pasted text become named groups
+await page.goto(base + '/r/new', { waitUntil: 'networkidle0' });
+await page.click('button::-p-text(Вставити з тексту)');
+await page.waitForSelector('div[role="dialog"] textarea');
+await page.$eval(
+  'div[role="dialog"] textarea',
+  (el, text) => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(el, text);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  },
+  readFileSync(new URL('../fixtures/varenyky.txt', import.meta.url), 'utf8'),
+);
+await page.click('div[role="dialog"] button::-p-text(Розібрати)');
+await sleep(400);
+const pastedGroups = await editorGroups();
+check(
+  'pasted text split into groups',
+  JSON.stringify(pastedGroups.map((g) => [g.name, g.rows.length])) === '[["Тісто",4],["Для начинки",3]]',
+  JSON.stringify(pastedGroups),
+);
+await page.screenshot({ path: `${out}/16-paste-groups.png` });
 
 check('no page errors', errors.length === 0, errors.join(' | '));
 

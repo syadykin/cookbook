@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { TextArea, TextField } from '@/components/Field';
 import { AddPhotoTile, NoPhoto, Photo, PhotoButton, RemovePhotoButton } from '@/components/Photo';
 import { SectionTitle } from '@/components/SectionTitle';
-import { DragHandle, SortableList } from '@/components/Sortable';
+import { DragHandle, SortableGroups, SortableList } from '@/components/Sortable';
 import { StepNumber } from '@/components/StepNumber';
 import { Tag } from '@/components/Tag';
 import {
@@ -22,7 +22,7 @@ import {
 } from '@/components/icons';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useTags } from '@/hooks/useRecipes';
-import { type DraftPhoto, draftToRecipe, photoTint, tagTint } from '@/lib/recipe';
+import { type DraftPhoto, draftToRecipe, groupTitle, photoTint, tagTint } from '@/lib/recipe';
 
 import styles from './Recipe.module.scss';
 import type { DraftApi, PhotoTarget } from './useDraft';
@@ -109,6 +109,7 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
     requestAnimationFrame(() => document.getElementById(id)?.focus());
 
   const busy = saving || d.uploading;
+  const groupCount = draft.ingredientGroups.length;
 
   return (
     <>
@@ -243,45 +244,82 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
             </div>
           </div>
 
-          <ul className={styles.editList}>
-            <SortableList items={draft.ingredients} onReorder={d.reorderIngredients}>
-              {(x, row, handle) => (
-                <li
-                  key={x.key}
-                  ref={row.ref}
-                  className={cn('reveal-zone', styles.ingRow, row.dragging && styles.dragging)}
-                  style={row.style}
+          <SortableGroups
+            groups={draft.ingredientGroups}
+            itemsOf={(g) => g.ingredients}
+            renderItem={(x, row, handle) => (
+              <li
+                key={x.key}
+                ref={row.ref}
+                className={cn('reveal-zone', styles.ingRow, row.dragging && styles.dragging)}
+                style={row.style}
+              >
+                <DragHandle {...handle} />
+                <TextField
+                  id={`ing-${x.key}`}
+                  label="Інгредієнт"
+                  placeholder="Інгредієнт"
+                  value={x.name}
+                  onChange={(e) => d.patchIngredient(x.key, { name: e.target.value })}
+                />
+                <TextField
+                  className={styles.qtyField}
+                  label="Кількість"
+                  placeholder="500 г"
+                  value={x.quantity}
+                  onChange={(e) => d.patchIngredient(x.key, { quantity: e.target.value })}
+                />
+                <Button
+                  aria-label="Видалити інгредієнт"
+                  className={styles.rowButton}
+                  reveal="touch"
+                  onClick={() => d.removeIngredient(x.key)}
                 >
-                  <DragHandle {...handle} />
+                  <CloseIcon size={15} />
+                </Button>
+              </li>
+            )}
+            withItems={(g, ingredients) => ({ ...g, ingredients })}
+            onChange={d.setIngredientGroups}
+          >
+            {(g, gi, list) => (
+              <div className={styles.ingGroup} data-group={gi}>
+                <div className={cn('reveal-zone', styles.groupHead)}>
                   <TextField
-                    id={`ing-${x.key}`}
-                    label="Інгредієнт"
-                    placeholder="Інгредієнт"
-                    value={x.name}
-                    onChange={(e) => d.patchIngredient(x.key, { name: e.target.value })}
+                    className={styles.groupName}
+                    id={`grp-${g.key}`}
+                    label="Назва групи"
+                    placeholder={groupTitle('', gi, groupCount) || 'Назва групи, напр. «Тісто»'}
+                    value={g.name}
+                    onChange={(e) => d.renameGroup(g.key, e.target.value)}
                   />
-                  <TextField
-                    className={styles.qtyField}
-                    label="Кількість"
-                    placeholder="500 г"
-                    value={x.quantity}
-                    onChange={(e) => d.patchIngredient(x.key, { quantity: e.target.value })}
-                  />
-                  <Button
-                    aria-label="Видалити інгредієнт"
-                    className={styles.rowButton}
-                    reveal="touch"
-                    onClick={() => d.removeIngredient(x.key)}
-                  >
-                    <CloseIcon size={15} />
-                  </Button>
-                </li>
-              )}
-            </SortableList>
-          </ul>
-          <Button className={styles.addRow} onClick={() => focusSoon(`ing-${d.addIngredient()}`)}>
+                  {groupCount > 1 && (
+                    <Button
+                      aria-label="Видалити групу"
+                      className={styles.rowButton}
+                      reveal="touch"
+                      onClick={() => d.removeGroup(g.key)}
+                    >
+                      <TrashIcon size={15} />
+                    </Button>
+                  )}
+                </div>
+                <ul ref={list.ref} className={cn(styles.editList, list.empty && styles.emptyGroup)}>
+                  {list.rows}
+                </ul>
+                <Button
+                  className={styles.addRow}
+                  onClick={() => focusSoon(`ing-${d.addIngredient(g.key)}`)}
+                >
+                  <PlusIcon size={16} />
+                  Додати інгредієнт
+                </Button>
+              </div>
+            )}
+          </SortableGroups>
+          <Button className={styles.addGroup} onClick={() => focusSoon(`grp-${d.addGroup()}`)}>
             <PlusIcon size={16} />
-            Додати інгредієнт
+            Додати групу
           </Button>
         </section>
 
@@ -406,7 +444,7 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
           open={pasting}
           replacing={(() => {
             const r = draftToRecipe(draft);
-            return r.ingredients.length > 0 || r.steps.length > 0;
+            return r.ingredientGroups.length > 0 || r.steps.length > 0;
           })()}
           onOpenChange={setPasting}
           onParsed={d.applyParsed}

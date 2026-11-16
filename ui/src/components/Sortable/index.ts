@@ -1,1 +1,1 @@
-export { DragHandle, SortableList } from './Sortable';
+export { DragHandle, SortableGroups, SortableList } from './Sortable';

@@ -1,3 +1,16 @@
+.group + .group {
+  margin-top: 20px;
+}
+
+.groupTitle {
+  margin: 0;
+  color: var(--text-2);
+  font-family: var(--font-hand);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .list {
   margin: 0 -8px;
   padding: 0;
@@ -26,6 +39,10 @@
   &:hover {
     background: var(--hover);
   }
+}
+
+.large .groupTitle {
+  font-size: 27px;
 }
 
 .large .row {

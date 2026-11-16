@@ -26,13 +26,13 @@ status = slow_upload(3_000_000)
 check('too large 413 for a slow sender', '413' in status, status)
 
 # attach: cover + step photo; then move step photo to recipe
-st, r = req('POST', '/api/recipes', dict(title='Фото', description='', timeText='', notes='', servings=2, tags=[], ingredients=[],
+st, r = req('POST', '/api/recipes', dict(title='Фото', description='', timeText='', notes='', servings=2, tags=[], ingredientGroups=[],
         photos=[{'id': p['id']}], steps=[dict(text='a', photos=[{'id': a['id']}])]))
 check('create with photos', st == 201 and r['photos'][0]['id'] == p['id'] and r['steps'][0]['photos'][0]['id'] == a['id'], (st, r))
 r2 = dict(r, photos=[{'id': a['id']}, r['photos'][0]], steps=[dict(r['steps'][0], photos=[])])
 st, u = req('PUT', f'/api/recipes/{r["id"]}', r2, {'If-Match': str(r['version'])})
 check('move step photo to recipe, reorder', st == 200 and [x['id'] for x in u['photos']] == [a['id'], p['id']] and u['steps'][0]['photos'] == [], (st, u))
-st, other = req('POST', '/api/recipes', dict(title='Чужий', description='', timeText='', notes='', servings=2, tags=[], ingredients=[], steps=[], photos=[{'id': a['id']}]))
+st, other = req('POST', '/api/recipes', dict(title='Чужий', description='', timeText='', notes='', servings=2, tags=[], ingredientGroups=[], steps=[], photos=[{'id': a['id']}]))
 check('photo of another recipe refused', st == 422, (st, other))
 st, l = req('GET', q('/api/recipes', q='фото'))
 check('list cover', l[0].get('cover', {}).get('id') == a['id'], l)

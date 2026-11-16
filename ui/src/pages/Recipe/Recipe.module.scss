@@ -275,6 +275,34 @@
   background: var(--bg);
 }
 
+.ingGroup + .ingGroup {
+  margin-top: 20px;
+}
+
+.groupHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.groupName {
+  font-weight: 600;
+}
+
+// a group whose rows were all dragged out still needs room to drop them back
+.emptyGroup {
+  min-height: 44px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-btn);
+}
+
+.addGroup {
+  margin-top: 16px;
+  margin-left: -12px;
+}
+
 .qtyField {
   color: var(--text-2);
   text-align: right;
