@@ -1,5 +1,5 @@
 import cn from 'classnames';
-import { type KeyboardEvent, useState } from 'react';
+import { type KeyboardEvent, useEffect, useState } from 'react';
 
 import { PasteRecipe } from '@/blocks/PasteRecipe';
 import { usePhotoPicker } from '@/blocks/PhotoPicker';
@@ -59,6 +59,37 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
         : `Фото до кроку ${draft.steps.findIndex((s) => s.key === t) + 1}`,
     onFiles: d.addPhotos,
   });
+
+  // Ctrl+V of an image: into the step that holds focus, otherwise into the recipe photos. Text
+  // wins when the clipboard carries both — Word or Google Docs add a rendered picture to copied
+  // text, and pasting that into a step should not attach a photo.
+  useEffect(() => {
+    if (pasting) {
+      return;
+    }
+    const onPaste = (e: ClipboardEvent) => {
+      const data = e.clipboardData;
+      if (!data || data.getData('text/plain').trim()) {
+        return;
+      }
+      const images = Array.from(data.files).filter((f) => f.type.startsWith('image/'));
+      if (!images.length) {
+        return;
+      }
+      e.preventDefault();
+      const step =
+        e.target instanceof Element ? e.target.closest<HTMLElement>('[data-step]') : null;
+      if (step?.dataset.step) {
+        d.addPhotos(step.dataset.step, images);
+      } else {
+        // the recipe photos may be scrolled away; showing the paste as the hero is the feedback
+        setPhotoIndex(draft.photos.length);
+        d.addPhotos('recipe', images);
+      }
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, [d, draft.photos.length, pasting]);
 
   const heroIndex = Math.min(photoIndex, Math.max(0, draft.photos.length - 1));
   const hero = draft.photos[heroIndex];
@@ -270,6 +301,7 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
                     styles.editStep,
                     row.dragging && styles.dragging,
                   )}
+                  data-step={s.key}
                   style={row.style}
                 >
                   <div className={styles.stepTools}>
