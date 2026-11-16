@@ -377,6 +377,19 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
           </Button>
         </section>
 
+        <section aria-labelledby="notes-h" className={styles.section}>
+          <div className={styles.sectionHead}>
+            <SectionTitle id="notes-h">Примітки</SectionTitle>
+          </div>
+          <TextArea
+            className={styles.notesField}
+            label="Примітки"
+            placeholder="Заміни, поради, звідки рецепт"
+            value={draft.notes ?? ''}
+            onChange={(e) => d.set('notes', e.target.value)}
+          />
+        </section>
+
         {onDelete && (
           <footer className={styles.dangerZone}>
             <Button variant="danger" onClick={() => setConfirmDelete(true)}>

@@ -135,6 +135,7 @@ export type Draft = {
   photos: DraftPhoto[];
   ingredients: DraftIngredient[];
   steps: DraftStep[];
+  notes: string;
 };
 
 let keySeq = 0;
@@ -151,6 +152,7 @@ export const emptyDraft = (): Draft => ({
   photos: [],
   ingredients: [{ key: newKey(), name: '', quantity: '' }],
   steps: [{ key: newKey(), text: '', timer: '', photos: [] }],
+  notes: '',
 });
 
 export function recipeToDraft(r: TRecipe): Draft {
@@ -174,6 +176,7 @@ export function recipeToDraft(r: TRecipe): Draft {
       timer: secondsToMinutes(s.timerSeconds),
       photos: s.photos.map(photoToDraft),
     })),
+    notes: r.notes,
   };
 }
 
@@ -204,6 +207,8 @@ export function draftToRecipe(d: Draft, base?: TRecipe): TRecipe {
         timerSeconds: minutesToSeconds(s.timer),
         photos: uploadedPhotos(s.photos),
       })),
+    // drafts stored before notes existed lack the field
+    notes: (d.notes ?? '').trim(),
   };
 }
 
@@ -238,6 +243,7 @@ export const isDraftEmpty = (d: Draft) => {
     !r.title &&
     !r.description &&
     !r.timeText &&
+    !r.notes &&
     r.tags.length === 0 &&
     r.photos.length === 0 &&
     r.ingredients.length === 0 &&

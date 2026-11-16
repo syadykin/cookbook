@@ -81,6 +81,11 @@ await sleep(500);
 check('recipe title', (await page.$eval('h1', (h) => h.textContent)) === 'Сирники');
 check('tab title names the recipe', (await page.title()) === 'Сирники — Їжак з макітрою', await page.title());
 await page.screenshot({ path: `${out}/3-recipe-top.png` });
+const notes = await page.$eval('#notes-h', (h) => {
+  const p = h.closest('section').querySelector('p');
+  return { text: p.innerText, breaks: getComputedStyle(p).whiteSpace };
+}).catch(() => null);
+check('notes shown with line breaks', notes?.text === 'Сир має бути сухим.\nЗамість борошна можна манку.' && notes.breaks === 'pre-line', JSON.stringify(notes));
 
 const qty = () => page.$eval('#ing-h ~ ul li:first-child button span:last-child', (s) => s.textContent).catch(() => null);
 const firstQty = async () =>
@@ -170,6 +175,9 @@ check('new ingredient focused', focusedIsNew === 'Інгредієнт', focused
 await page.keyboard.type('Ванільний цукор');
 await page.keyboard.press('Tab');
 await page.keyboard.type('1 ч. л.');
+// select() rather than a triple click, which takes only one line of a textarea
+await page.$eval('textarea[placeholder="Заміни, поради, звідки рецепт"]', (t) => (t.focus(), t.select()));
+await page.keyboard.type('Подавати теплими.');
 
 // upload a photo through the desktop file dialog
 // centred, so the sticky header is not what receives the click
@@ -209,7 +217,7 @@ await sleep(500);
 const savedTitle = await page.$eval('h1', (h) => h.textContent);
 check('saved over newer version', savedTitle === 'Сирники бабусині' && !page.url().includes('edit'), savedTitle);
 const api = await page.evaluate(async () => (await fetch('/api/recipes/1')).json());
-check('server has new tag, ingredient, photo', api.tags.includes('улюблене') && api.ingredients.some((i) => i.name === 'Ванільний цукор') && api.photos.length === 3, JSON.stringify({ t: api.tags, p: api.photos.length }));
+check('server has new tag, ingredient, photo, notes', api.tags.includes('улюблене') && api.ingredients.some((i) => i.name === 'Ванільний цукор') && api.photos.length === 3 && api.notes === 'Подавати теплими.', JSON.stringify({ t: api.tags, p: api.photos.length, n: api.notes }));
 check('draft cleared after save', (await page.evaluate(() => localStorage.getItem('draft:recipe:1'))) === null);
 
 // new recipe

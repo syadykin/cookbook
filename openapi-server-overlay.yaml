@@ -69,6 +69,9 @@ actions:
     timeText:
       x-oapi-codegen-extra-tags:
         gorm: "not null;default:''"
+    notes:
+      x-oapi-codegen-extra-tags:
+        gorm: "not null;default:''"
     servings:
       x-oapi-codegen-extra-tags:
         gorm: "not null;default:4;check:servings >= 1"

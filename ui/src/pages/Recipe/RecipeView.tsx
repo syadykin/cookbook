@@ -166,6 +166,15 @@ export function RecipeView({ recipe, onEdit }: Props) {
           </section>
         )}
 
+        {recipe.notes && (
+          <section aria-labelledby="notes-h" className={styles.section}>
+            <div className={styles.sectionHead}>
+              <SectionTitle id="notes-h">Примітки</SectionTitle>
+            </div>
+            <p className={styles.notes}>{recipe.notes}</p>
+          </section>
+        )}
+
         {recipe.ingredients.length === 0 && recipe.steps.length === 0 && (
           <p className={styles.emptyNote}>
             Рецепт поки порожній.{' '}

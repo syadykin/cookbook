@@ -196,6 +196,16 @@
   white-space: pre-line;
 }
 
+.notes {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.notesField {
+  min-height: 3lh;
+}
+
 .stepTimer {
   margin-top: 10px;
 }

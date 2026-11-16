@@ -1,5 +1,5 @@
 from common import *  # noqa: F401,F403 — logs in on import
-base = dict(title='Сирники', description='Ніжні', timeText='30 хв', servings=4,
+base = dict(title='Сирники', description='Ніжні', timeText='30 хв', notes='  Подавати зі сметаною.\n<b>не</b> HTML  ', servings=4,
             tags=['Сніданок', 'вегетаріанське', 'сніданок ', ' На   сковороді'], photos=[],
             ingredients=[dict(name='Сир', quantity='500 г'), dict(name='Яйця', quantity='2 шт')],
             steps=[dict(text='Протріть сир', photos=[]), dict(text='Смажте', timerSeconds=240, photos=[])])
@@ -7,6 +7,8 @@ st, r = req('POST', '/api/recipes', base)
 check('create 201', st == 201, (st, r))
 check('tags normalized', r['tags'] == ['сніданок', 'вегетаріанське', 'на сковороді'], r['tags'])
 check('version 1', r['version'] == 1)
+check('notes trimmed, kept as plain text', r['notes'] == 'Подавати зі сметаною.\n<b>не</b> HTML', r['notes'])
+check('notes required', req('POST', '/api/recipes', {k: v for k, v in base.items() if k != 'notes'})[0] == 422)
 rid = r['id']; step_ids = [s['id'] for s in r['steps']]; ing_ids = [i['id'] for i in r['ingredients']]
 check('timer kept', r['steps'][1]['timerSeconds'] == 240)
 
