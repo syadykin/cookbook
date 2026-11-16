@@ -282,13 +282,44 @@ check(
 );
 check('parsed 9 steps', form.steps === 9, form.steps);
 check('timers from step text', JSON.stringify(form.timers) === JSON.stringify(['', '60', '', '', '10', '40', '', '', '20']), JSON.stringify(form.timers));
+
+// images pasted from the clipboard: into the focused step, otherwise into the recipe photos;
+// text in the clipboard wins over an image that came with it
+const pasteImage = (text) =>
+  page.evaluate(
+    (b64, text) => {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const dt = new DataTransfer();
+      dt.items.add(new File([bytes], 'image.jpg', { type: 'image/jpeg' }));
+      if (text) dt.setData('text/plain', text);
+      (document.activeElement ?? document.body).dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    },
+    readFileSync(`${img}/step1.jpg`).toString('base64'),
+    text,
+  );
+const pastedCounts = () =>
+  page.evaluate(() => ({
+    recipe: document.querySelectorAll('section[aria-label="Фото страви"] button[aria-label^="Фото"]').length,
+    steps: [...document.querySelectorAll('[data-step]')].map((li) => li.querySelectorAll('button[aria-label^="Фото"]').length),
+  }));
+await page.$$eval('textarea[placeholder="Опишіть крок"]', (ts) => ts[1].focus());
+await pasteImage();
+await page.$$eval('textarea[placeholder="Опишіть крок"]', (ts) => ts[1].focus());
+await pasteImage('просто текст');
+await page.focus('input[placeholder="Назва рецепта"]');
+await pasteImage();
+await page.waitForFunction(() => !document.querySelector('[aria-label*="завантажується"]'), { timeout: 15000 });
+const pasted = await pastedCounts();
+check('pasted image goes to the focused step', pasted.steps[1] === 1 && pasted.steps.reduce((a, b) => a + b) === 1, JSON.stringify(pasted));
+check('pasted image outside steps goes to the recipe', pasted.recipe === 1, JSON.stringify(pasted));
 await page.click('button::-p-text(Готово)');
 await page.waitForFunction(() => /\/r\/\d+$/.test(location.pathname), { timeout: 5000 }).catch(() => null);
 const savedPlov = await page.evaluate(async () => (await fetch('/api/recipes/' + location.pathname.split('/').pop())).json());
 check(
   'parsed recipe saved',
-  savedPlov.title === 'Плов' && savedPlov.ingredients.length === 11 && savedPlov.steps[1].timerSeconds === 3600,
-  JSON.stringify({ t: savedPlov.title, i: savedPlov.ingredients?.length, s: savedPlov.steps?.[1] }),
+  savedPlov.title === 'Плов' && savedPlov.ingredients.length === 11 && savedPlov.steps[1].timerSeconds === 3600 &&
+    savedPlov.photos.length === 1 && savedPlov.steps[1].photos.length === 1,
+  JSON.stringify({ t: savedPlov.title, i: savedPlov.ingredients?.length, p: savedPlov.photos?.length, s: savedPlov.steps?.[1] }),
 );
 
 check('no page errors', errors.length === 0, errors.join(' | '));
