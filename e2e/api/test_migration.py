@@ -21,7 +21,7 @@ def local_times():
         db.close()
 
 
-st, lst = req('GET', '/api/recipes')
+lst = req('GET', '/api/recipes')[1]['items']
 check('list sorted by real time across offsets', [r['id'] for r in lst] == [2, 1, 3], lst)
 check('times served in UTC, fraction kept', lst[0]['updatedAt'] == '2026-10-25T01:10:00.5Z', lst[0])
 check('stored times rewritten in UTC', local_times() == [], local_times())
@@ -40,5 +40,5 @@ st, u = req('PUT', '/api/recipes/1', r, {'If-Match': f'"{r["version"]}"'})
 check('save after migration', st == 200 and [g['name'] for g in u['ingredientGroups']] == ['', 'Начинка'], (st, u))
 # the server runs in a non-UTC TZ (run.sh), so this also covers fresh writes and the session row
 check('new writes stored in UTC', local_times() == [], local_times())
-check('saved recipe first', [r['id'] for r in req('GET', '/api/recipes')[1]][0] == 1)
+check('saved recipe first', [r['id'] for r in req('GET', '/api/recipes')[1]['items']][0] == 1)
 finish()

@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Photo } from '@/components/Photo';
 import { Chip } from '@/components/Tag';
 import { ChevronRightIcon, PlusIcon, SearchIcon } from '@/components/icons';
+import { useOnVisible } from '@/hooks/useOnVisible';
 import { useRecipeList, useTags } from '@/hooks/useRecipes';
 import { photoTint, tagTint } from '@/lib/recipe';
 
@@ -20,7 +21,12 @@ export function Library() {
   const q = useDeferredValue(query.trim());
 
   const { data: tags } = useTags();
-  const { data: recipes, isPending } = useRecipeList({ q, tag });
+  const { data, isPending, isFetching, hasNextPage, fetchNextPage } = useRecipeList({ q, tag });
+  const recipes = data?.pages.flatMap((p) => p.items);
+  // isFetching also covers a new filter's first page, while the old list is still shown
+  const moreRef = useOnVisible<HTMLDivElement>(() => void fetchNextPage(), {
+    enabled: hasNextPage && !isFetching,
+  });
 
   const pickTag = (t: string) =>
     setParams(
@@ -97,6 +103,7 @@ export function Library() {
           </li>
         ))}
       </ul>
+      <div ref={moreRef} />
 
       {!isPending && recipes?.length === 0 && (
         <p className={styles.empty}>

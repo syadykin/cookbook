@@ -296,7 +296,7 @@ check('1,5 хв → 1:30 timer', timerLabel === '1:30', timerLabel);
 await page.goto(base + '/r/new', { waitUntil: 'networkidle0' });
 await page.click('button::-p-text(Готово)');
 await sleep(500);
-const count = await page.evaluate(async () => (await (await fetch('/api/recipes')).json()).length);
+const count = await page.evaluate(async () => (await (await fetch('/api/recipes')).json()).items.length);
 check('tab title back to the app name', (await page.title()) === 'Їжак з макітрою', await page.title());
 check('empty new recipe not saved', count === 4 && new URL(page.url()).pathname === '/', `${count} ${page.url()}`);
 
@@ -414,6 +414,49 @@ check(
   JSON.stringify(filling),
 );
 await page.screenshot({ path: `${out}/16-paste-groups.png` });
+
+// a long library loads page by page while scrolling; a tag starts its own list from the top
+await page.evaluate(async () => {
+  for (let i = 1; i <= 35; i++) {
+    await fetch('/api/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: `Партія ${i}`, description: '', timeText: '', notes: '', servings: 2, tags: ['партія'], photos: [], ingredientGroups: [], steps: [] }),
+    });
+  }
+});
+const total = await page.evaluate(async () => (await (await fetch('/api/recipes?limit=100')).json()).items.length);
+const rowCount = () => page.$$eval('main ul li a', (as) => as.length);
+const scrollUntil = async (n) => {
+  for (let i = 0; i < 20 && (await rowCount()) < n; i++) {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await sleep(150);
+  }
+  return rowCount();
+};
+await page.goto(base + '/', { waitUntil: 'networkidle0' });
+check('first page only', (await rowCount()) === 30, await rowCount());
+check('scrolling loads the rest', (await scrollUntil(total)) === total, `${await rowCount()} of ${total}`);
+await page.screenshot({ path: `${out}/21-library-loaded.png` });
+
+// at the very bottom, so the click below does not scroll the row into view first
+await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+await sleep(200);
+const scrolled = await page.evaluate(() => window.scrollY);
+await page.click('main ul li:last-child a');
+await page.waitForFunction(() => location.pathname !== '/');
+await sleep(300);
+await page.goBack();
+await page.waitForFunction(() => location.pathname === '/');
+await sleep(400);
+const back = await page.evaluate(() => ({ y: window.scrollY, rows: document.querySelectorAll('main ul li a').length }));
+check('back returns to the same place in a long list', back.rows === total && Math.abs(back.y - scrolled) < 5, `${JSON.stringify(back)} vs ${scrolled}`);
+
+await page.click('[aria-label="Фільтр за тегами"] button::-p-text(партія)');
+await page.waitForFunction(() => document.querySelectorAll('main ul li a').length === 30 && [...document.querySelectorAll('main ul li a')].every((a) => a.textContent.includes('Партія')), { timeout: 5000 }).catch(() => null);
+const tagRows = await page.$$eval('main ul li a', (as) => as.map((a) => a.textContent));
+check('a tag starts from its first page', tagRows.length === 30 && tagRows[0].includes('Партія 35'), `${tagRows.length} ${tagRows[0]}`);
+check('…and loads the rest of the tag', (await scrollUntil(35)) === 35, await rowCount());
 
 check('no page errors', errors.length === 0, errors.join(' | '));
 

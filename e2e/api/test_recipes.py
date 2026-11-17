@@ -62,8 +62,8 @@ check('foreign child id -> new row', st == 201 and r2['ingredientGroups'][0]['in
 st, again = req('GET', f'/api/recipes/{rid}')
 check('other recipe untouched', again['ingredientGroups'][0]['ingredients'][0]['name'] == 'Яйця')
 
-def titles(qs): return [x['title'] for x in req('GET', q('/api/recipes', **qs))[1]]
-check('summary has description', [x['description'] for x in req('GET', '/api/recipes')[1]] == ['Ніжні', 'Ніжні'])
+def titles(qs): return [x['title'] for x in req('GET', q('/api/recipes', **qs))[1]['items']]
+check('summary has description', [x['description'] for x in req('GET', '/api/recipes')[1]['items']] == ['Ніжні', 'Ніжні'])
 check('list order', titles({}) == ['Борщ', 'Сирники бабусині'], titles({}))
 check('search cyrillic prefix', titles({'q': 'сир'}) == ['Сирники бабусині'], titles({'q': 'сир'}))
 check('search case', titles({'q': 'СИРНИКИ'}) == ['Сирники бабусині'])
@@ -86,4 +86,47 @@ st, _ = req('GET', f'/api/recipes/{rid}')
 check('gone 404', st == 404)
 st, _ = req('DELETE', f'/api/recipes/{rid}')
 check('delete again 404', st == 404)
+
+# pagination: pages keyed by the last row, so edits between pages neither repeat nor skip rows
+pages = [req('POST', '/api/recipes', dict(base, title=f'Сторінка {i}', tags=['сторінки'], ingredientGroups=[], steps=[]))[1] for i in range(7)]
+newest_first = [p['id'] for p in reversed(pages)]
+
+
+def walk(between=None, **params):
+    """All ids of a list, page by page; `between` runs after the first page. Returns (ids, page sizes)."""
+    ids, sizes, cursor = [], [], None
+    while True:
+        st, page = req('GET', q('/api/recipes', **params, **({'cursor': cursor} if cursor else {})))
+        if st != 200:
+            return st, page
+        ids += [r['id'] for r in page['items']]
+        sizes.append(len(page['items']))
+        cursor = page.get('nextCursor')
+        if not cursor:
+            return ids, sizes
+        if between and len(sizes) == 1:
+            between()
+
+
+everything = [r['id'] for r in req('GET', q('/api/recipes', limit=100))[1]['items']]
+check('default page holds a small list', req('GET', '/api/recipes')[1].get('nextCursor') is None)
+check('pages add up to the whole list', walk(limit=2)[0] == everything, (walk(limit=2), everything))
+check('filtered pages', walk(tag='сторінки', limit=3) == (newest_first, [3, 3, 1]), walk(tag='сторінки', limit=3))
+check('no next page when the last one is full', walk(tag='сторінки', limit=7) == (newest_first, [7]))
+
+
+def touch_unseen():
+    # the oldest of the tag, still on a later page, moves to the top
+    p = pages[0]
+    check('edit between pages', req('PUT', f'/api/recipes/{p["id"]}', dict(p, title='Сторінка 0 змінена'), {'If-Match': f'"{p["version"]}"'})[0] == 200)
+
+
+ids, _ = walk(touch_unseen, tag='сторінки', limit=3)
+# with offsets the second page would start one row early and repeat one
+check('edit between pages: no repeats, others all there', ids == newest_first[:-1], ids)
+check('edited recipe first on a fresh list', walk(tag='сторінки', limit=3)[0][0] == pages[0]['id'])
+
+check('bad cursor 400', req('GET', q('/api/recipes', cursor='nonsense'))[0] == 400)
+check('limit 0 → 400', req('GET', q('/api/recipes', limit=0))[0] == 400)
+check('limit over 100 → 400', req('GET', q('/api/recipes', limit=101))[0] == 400)
 finish()
