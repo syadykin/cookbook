@@ -88,9 +88,16 @@ From `ui/`: `npm run lint`, `npm run prettier`, `npm run schema`, `npx tsc -b`.
   configured prefix (the client derives its basename and API URL from it).
 - `api/db.go` — SQLite DSN pragmas (FKs, WAL), AutoMigrate, FTS.
 - `api/http/` — one file per resource implementing the strict interface (`auth.go`,
-  `recipes.go`, `photos.go`). `RunJobs` (hourly) deletes expired sessions and orphan photos.
+  `recipes.go`, `photos.go`, `recipe_pdf.go`). `RunJobs` (hourly) deletes expired sessions and
+  orphan photos.
 - Photos: `<photos.path>/<id>/{160,640,1280,2048}.jpg`, re-encoded JPEG (EXIF incl. GPS dropped,
   orientation applied, ≤2048px, never upscaled). Type is sniffed from bytes; HEIC → 415.
+- PDF export (`GET /api/recipes/{id}/pdf`, a download): `api/pdf` lays out an A4 page with
+  `signintech/gopdf` — header with the cover photo, then ingredients | steps + notes, each column
+  flowing onto further pages on its own. Quantities are for the recipe's own servings; tags and
+  step photos are left out. Fonts are static Latin+Cyrillic subsets of Inter and Caveat
+  embedded from `api/pdf/fonts` (OFL; `subset.py` rebuilds them — the library takes neither
+  variable fonts nor shaping). Colours there mirror the light values of `tokens.css`.
 - `api/http/session.go` — sessions: random token in an HttpOnly cookie, sha256 in the DB, sliding
   expiry. `sessionMiddleware` resolves it once per request; the validator's authenticator only
   checks the result. Handlers get the user with `s.UserId(ctx)`.

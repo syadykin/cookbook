@@ -22,6 +22,11 @@
   }
 }
 
+.navActions {
+  display: flex;
+  gap: 4px;
+}
+
 .editNav {
   padding: 6px var(--gutter);
   border-bottom: 1px solid var(--line-soft);
