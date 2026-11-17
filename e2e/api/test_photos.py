@@ -35,6 +35,7 @@ check('move step photo to recipe, reorder', st == 200 and [x['id'] for x in u['p
 st, other = req('POST', '/api/recipes', dict(title='Чужий', description='', timeText='', notes='', servings=2, tags=[], ingredientGroups=[], steps=[], photos=[{'id': a['id']}]))
 check('photo of another recipe refused', st == 422, (st, other))
 st, l = req('GET', q('/api/recipes', q='фото'))
+l = l['items']
 check('list cover', l[0].get('cover', {}).get('id') == a['id'], l)
 st, _ = req('DELETE', f'/api/recipes/{r["id"]}')
 finish()

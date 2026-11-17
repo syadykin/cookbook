@@ -2,12 +2,14 @@ package http
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"gorm.io/gorm"
@@ -427,7 +429,33 @@ func ftsQuery(q string) string {
 	return strings.Join(terms, " ")
 }
 
+const defaultPageSize = 30
+
+// A list cursor is the sort key of the last row sent: updated_at (as Unix nanoseconds) and id.
+// Bound back as a UTC time.Time, updated_at is formatted exactly as it was stored (see Now), so
+// the text comparison in SQL lines up with ORDER BY.
+func encodeCursor(r Recipe) string {
+	return base64.RawURLEncoding.EncodeToString(fmt.Appendf(nil, "%d:%d", r.UpdatedAt.UnixNano(), r.Id))
+}
+
+func decodeCursor(cursor string) (updatedAt time.Time, id int64, ok bool) {
+	raw, err := base64.RawURLEncoding.DecodeString(cursor)
+	if err != nil {
+		return time.Time{}, 0, false
+	}
+	var nanos int64
+	if n, err := fmt.Sscanf(string(raw), "%d:%d", &nanos, &id); err != nil || n != 2 {
+		return time.Time{}, 0, false
+	}
+	return time.Unix(0, nanos).UTC(), id, true
+}
+
 func (s *Server) RecipesList(ctx context.Context, req RecipesListRequestObject) (RecipesListResponseObject, error) {
+	limit := defaultPageSize
+	if req.Params.Limit != nil {
+		limit = *req.Params.Limit
+	}
+
 	q := s.db.
 		Preload("Photos", "position = 0").
 		Where("user_id = ?", s.UserId(ctx)).
@@ -442,12 +470,26 @@ func (s *Server) RecipesList(ctx context.Context, req RecipesListRequestObject) 
 		}
 	}
 
+	if req.Params.Cursor != nil {
+		updatedAt, id, ok := decodeCursor(*req.Params.Cursor)
+		if !ok {
+			return RecipesList400JSONResponse{ErrorJSONResponse{Code: "bad_request", Message: "Invalid cursor"}}, nil
+		}
+		q = q.Where("(updated_at, id) < (?, ?)", updatedAt, id)
+	}
+
+	// one row more than asked tells whether there is a next page
 	recipes := []Recipe{}
-	if err := q.Find(&recipes).Error; err != nil {
+	if err := q.Limit(limit + 1).Find(&recipes).Error; err != nil {
 		return nil, err
 	}
 
-	res := make(RecipesList200JSONResponse, 0, len(recipes))
+	res := RecipesList200JSONResponse{Items: make([]RecipeSummary, 0, min(len(recipes), limit))}
+	if len(recipes) > limit {
+		recipes = recipes[:limit]
+		next := encodeCursor(recipes[limit-1])
+		res.NextCursor = &next
+	}
 	for _, r := range recipes {
 		sum := RecipeSummary{
 			Id:          r.Id,
@@ -461,7 +503,7 @@ func (s *Server) RecipesList(ctx context.Context, req RecipesListRequestObject) 
 			cover := r.Photos[0]
 			sum.Cover = &cover
 		}
-		res = append(res, sum)
+		res.Items = append(res.Items, sum)
 	}
 	return res, nil
 }

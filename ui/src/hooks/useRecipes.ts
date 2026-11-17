@@ -1,4 +1,10 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 import $api, { type TRecipe, unwrap } from '@/lib/api';
 import { toRequest } from '@/lib/recipe';
@@ -10,9 +16,14 @@ export function useRecipeList(params: { q?: string; tag?: string }) {
     ...(params.q ? { q: params.q } : {}),
     ...(params.tag ? { tag: params.tag } : {}),
   };
-  return useQuery({
+  // The filter is part of the key, so a new q or tag starts its own list from the first page;
+  // a refetch (after a save) reloads the loaded pages in turn, each from the fresh previous one.
+  return useInfiniteQuery({
     queryKey: ['recipes', query],
-    queryFn: () => unwrap($api['recipes.list'](query)),
+    queryFn: ({ pageParam }) =>
+      unwrap($api['recipes.list']({ ...query, ...(pageParam ? { cursor: pageParam } : {}) })),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor,
     // keep the old rows on screen while a new search runs, instead of flashing empty
     placeholderData: keepPreviousData,
   });

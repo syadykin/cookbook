@@ -75,6 +75,9 @@ From `ui/`: `npm run lint`, `npm run prettier`, `npm run schema`, `npx tsc -b`.
 - Times are stored as text and SQLite compares them as strings, so every stored or compared time
   must be UTC: use `http.Now()` (also GORM's `NowFunc`), never `time.Now()`. The DSN reads them
   back in UTC (`_loc`); `migrateTimesToUTC` rewrote older local-time rows.
+- The recipe list is paged by an opaque keyset cursor over `(updated_at, id)`, not an offset:
+  saving a recipe moves it to the top, which would shift offsets. The UI uses `useInfiniteQuery`
+  keyed by the filter (a new `q`/`tag` starts from page one) and `useOnVisible` for scrolling.
 - Search: FTS5 table `recipes_fts` (unicode61 tokenizer — case-folds Cyrillic, which LIKE does
   not), kept by triggers in `api/db.go` and fully rebuilt at startup.
 
