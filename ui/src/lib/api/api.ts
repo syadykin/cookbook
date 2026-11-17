@@ -52,6 +52,9 @@ export async function unwrap<T>(
 /** URL of a photo variant; photos are served by the API, which checks ownership. */
 export const photoUrl = (id: string, w: TPhotoWidth = 1280) => `${apiUrl}/photos/${id}?w=${w}`;
 
+/** The recipe as a PDF; a download link, so the browser saves it under the server's file name. */
+export const recipePdfUrl = (id: number) => `${apiUrl}/recipes/${id}/pdf`;
+
 /** Where the browser goes to start a login; a full navigation, not a fetch. */
 export const loginUrl = (provider: TAuthProvider, returnTo?: string) =>
   provider.url + (returnTo ? '?' + new URLSearchParams({ return_to: returnTo }).toString() : '');
@@ -87,8 +90,9 @@ const $operations = {
 
   'photos.upload': photoUpload,
 } satisfies {
-  // the auth redirects and the photo file are browser navigations / <img> sources, not fetches
-  [K in Exclude<keyof operations, 'auth.login' | 'auth.callback' | 'photos.get'>]: (
+  // the auth redirects, the photo file and the PDF are browser navigations / <img> sources /
+  // downloads, not fetches
+  [K in Exclude<keyof operations, 'auth.login' | 'auth.callback' | 'photos.get' | 'recipes.pdf'>]: (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...args: any[]
   ) => Promise<unknown>;

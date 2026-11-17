@@ -197,6 +197,30 @@ paths:
         "401": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
 
+  /recipes/{id}/pdf:
+    parameters:
+      - $ref: "#/components/parameters/RecipeId"
+    get:
+      operationId: recipes.pdf
+      tags: [recipes]
+      summary: The recipe as an A4 PDF, for download
+      description: |
+        Title, time, description, the cover photo, ingredients (for the recipe's own servings),
+        steps with their timers and notes. Tags and step photos are left out.
+      responses:
+        "200":
+          description: PDF file
+          headers:
+            Content-Disposition:
+              required: true
+              description: attachment, named after the recipe title
+              schema: { type: string }
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
   /tags:
     get:
       operationId: tags.list

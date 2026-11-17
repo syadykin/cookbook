@@ -81,7 +81,25 @@ await sleep(500);
 check('recipe title', (await page.$eval('h1', (h) => h.textContent)) === 'Сирники');
 check('tab title names the recipe', (await page.title()) === 'Сирники — Їжак з макітрою', await page.title());
 await page.screenshot({ path: `${out}/3-recipe-top.png` });
-const notes = await page.$eval('#notes-h', (h) => {
+// the link is fetched rather than clicked: a headless download goes nowhere to look at
+const pdfLink = await page.$eval('a[aria-label="Завантажити PDF"]', async (a) => {
+  const res = await fetch(a.href);
+  const head = new Uint8Array(await res.arrayBuffer()).slice(0, 5);
+  return {
+    download: a.hasAttribute('download'),
+    status: res.status,
+    type: res.headers.get('Content-Type'),
+    disposition: res.headers.get('Content-Disposition'),
+    magic: String.fromCharCode(...head),
+  };
+}).catch((e) => ({ error: String(e) }));
+check(
+  'PDF download link',
+  pdfLink.download && pdfLink.status === 200 && pdfLink.type === 'application/pdf' && pdfLink.magic === '%PDF-' &&
+    decodeURIComponent(pdfLink.disposition?.split("''")[1] ?? '') === 'Сирники.pdf',
+  JSON.stringify(pdfLink),
+);
+const notes =await page.$eval('#notes-h', (h) => {
   const p = h.closest('section').querySelector('p');
   return { text: p.innerText, breaks: getComputedStyle(p).whiteSpace };
 }).catch(() => null);

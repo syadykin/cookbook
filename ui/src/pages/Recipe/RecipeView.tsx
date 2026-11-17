@@ -10,10 +10,10 @@ import { ServingsControl } from '@/components/ServingsControl';
 import { StepNumber } from '@/components/StepNumber';
 import { Tag } from '@/components/Tag';
 import { TimerButton } from '@/components/TimerButton';
-import { ChevronLeftIcon, ClockIcon, PencilIcon, PlayIcon } from '@/components/icons';
+import { ChevronLeftIcon, ClockIcon, DownloadIcon, PencilIcon, PlayIcon } from '@/components/icons';
 import { timerKey, useServings } from '@/contexts/Cooking';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
-import type { TRecipe } from '@/lib/api';
+import { type TRecipe, recipePdfUrl } from '@/lib/api';
 import { datesLine, photoTint, tagTint } from '@/lib/recipe';
 
 import styles from './Recipe.module.scss';
@@ -38,9 +38,14 @@ export function RecipeView({ recipe, onEdit }: Props) {
           <Button aria-label="Усі рецепти" iconOnly to={routes.library.toPath()}>
             <ChevronLeftIcon />
           </Button>
-          <Button aria-label="Редагувати рецепт" iconOnly onClick={onEdit}>
-            <PencilIcon size={18} />
-          </Button>
+          <div className={styles.navActions}>
+            <Button aria-label="Завантажити PDF" download href={recipePdfUrl(recipe.id)} iconOnly>
+              <DownloadIcon size={18} />
+            </Button>
+            <Button aria-label="Редагувати рецепт" iconOnly onClick={onEdit}>
+              <PencilIcon size={18} />
+            </Button>
+          </div>
         </nav>
       </header>
 

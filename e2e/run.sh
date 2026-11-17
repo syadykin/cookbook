@@ -78,6 +78,11 @@ start photos PHOTOS_MAX_UPLOAD_MB=1
 python3 "$here/api/test_photos.py" "$base" "$work/img" || fail "API photos"
 stop
 
+echo "== API: pdf"
+start pdf
+python3 "$here/api/test_pdf.py" "$base" "$work/img" || fail "API pdf"
+stop
+
 echo "== browser"
 start browser LOCAL_AUTO_SUBMIT=true
 python3 "$here/api/seed.py" "$base" "$work/img"
