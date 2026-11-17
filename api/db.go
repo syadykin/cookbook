@@ -22,6 +22,8 @@ func InitDb(path string, debug bool) (*gorm.DB, error) {
 	q.Set("_journal_mode", "WAL")
 	q.Set("_busy_timeout", "5000")
 	q.Set("_synchronous", "NORMAL")
+	// times read back in UTC, whatever offset an old row was written with (see http.Now)
+	q.Set("_loc", "UTC")
 
 	logLevel := logger.Warn
 	if debug {
@@ -36,6 +38,7 @@ func InitDb(path string, debug bool) (*gorm.DB, error) {
 
 	db, err := gorm.Open(sqlite.Open("file:"+path+"?"+q.Encode()), &gorm.Config{
 		Logger:                                   dbLogger,
+		NowFunc:                                  http.Now,
 		DisableForeignKeyConstraintWhenMigrating: false,
 	})
 	if err != nil {
@@ -60,6 +63,10 @@ func InitDb(path string, debug bool) (*gorm.DB, error) {
 	}
 	if err := migrateIngredients(db); err != nil {
 		return nil, fmt.Errorf("migrate ingredients: %w", err)
+	}
+
+	if err := migrateTimesToUTC(db); err != nil {
+		return nil, fmt.Errorf("migrate times to UTC: %w", err)
 	}
 
 	if err := initSearch(db); err != nil {
@@ -101,6 +108,45 @@ func migrateIngredients(db *gorm.DB) error {
 		} {
 			if err := tx.Exec(s).Error; err != nil {
 				return err
+			}
+		}
+		return nil
+	})
+}
+
+// migrateTimesToUTC rewrites stored times in UTC. Builds before it wrote them in the server's
+// local zone, and SQLite compares those as text (see http.Now), so recipes edited on either side
+// of a DST switch sorted wrongly. Every datetime column is covered, so a column added later
+// needs nothing here; rows already in UTC are skipped, which makes reruns no-ops.
+func migrateTimesToUTC(db *gorm.DB) error {
+	type column struct{ Table, Name string }
+	cols := []column{}
+	if err := db.Raw(`SELECT m.name AS "table", c.name AS name
+		FROM sqlite_master m JOIN pragma_table_info(m.name) c
+		WHERE m.type = 'table' AND lower(c.type) = 'datetime'`).Scan(&cols).Error; err != nil {
+		return err
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		for _, c := range cols {
+			// collected first: with one connection, an open result set blocks the updates
+			type row struct {
+				Rowid int64
+				Value time.Time
+			}
+			rows := []row{}
+			if err := tx.Raw(fmt.Sprintf("SELECT rowid AS rowid, %[1]q AS value FROM %[2]q WHERE %[1]q IS NOT NULL AND %[1]q NOT LIKE '%%+00:00'",
+				c.Name, c.Table)).Scan(&rows).Error; err != nil {
+				return err
+			}
+			for _, r := range rows {
+				// the driver yields the zero time for text it cannot parse; leave such rows alone
+				if r.Value.IsZero() {
+					continue
+				}
+				if err := tx.Exec(fmt.Sprintf("UPDATE %q SET %q = ? WHERE rowid = ?", c.Table, c.Name),
+					r.Value.UTC(), r.Rowid).Error; err != nil {
+					return err
+				}
 			}
 		}
 		return nil

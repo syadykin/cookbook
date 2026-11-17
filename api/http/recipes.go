@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
 	"gorm.io/gorm"
@@ -111,7 +110,7 @@ func (s *Server) saveRecipe(tx *gorm.DB, userId int64, existing *Recipe, in Reci
 				"servings":    servings,
 				"tags":        string(tagsJson),
 				"version":     gorm.Expr("version + 1"),
-				"updated_at":  time.Now(),
+				"updated_at":  Now(),
 			})
 		if res.Error != nil {
 			return 0, res.Error

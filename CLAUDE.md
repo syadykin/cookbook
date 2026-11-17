@@ -72,6 +72,9 @@ From `ui/`: `npm run lint`, `npm run prettier`, `npm run schema`, `npx tsc -b`.
   `ON DELETE SET NULL`). Unowned photos older than 24h are deleted by a job. Files are served via
   `GET /api/photos/{id}?w=` with an ownership check; the client builds the URL.
 - Optimistic locking: integer `version`, sent as `If-Match`; mismatch → 412.
+- Times are stored as text and SQLite compares them as strings, so every stored or compared time
+  must be UTC: use `http.Now()` (also GORM's `NowFunc`), never `time.Now()`. The DSN reads them
+  back in UTC (`_loc`); `migrateTimesToUTC` rewrote older local-time rows.
 - Search: FTS5 table `recipes_fts` (unicode61 tokenizer — case-folds Cyrillic, which LIKE does
   not), kept by triggers in `api/db.go` and fully rebuilt at startup.
 

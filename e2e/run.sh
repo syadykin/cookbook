@@ -38,7 +38,8 @@ start() {
   # the checks rely on fixed ids, so a reused E2E_WORK must not keep an old database
   rm -rf "$work/$name"
   mkdir -p "$work/$name"
-  env GIN_MODE=release SERVER_LISTEN="127.0.0.1:$port" \
+  # a zone with DST, not UTC: stored times must not depend on the server's zone
+  env GIN_MODE=release SERVER_LISTEN="127.0.0.1:$port" TZ=Europe/Kyiv \
     DATABASE_PATH="$work/$name/db.sqlite3" PHOTOS_PATH="$work/$name/photos" \
     LOCAL_USER_EMAIL=cook@example.com LOCAL_USER_NAME="Тест Кухар" \
     "$@" "$bin" -c /nonexistent >"$work/$name/server.log" 2>&1 &
@@ -68,7 +69,7 @@ stop
 echo "== API: migration"
 python3 "$here/api/legacy_db.py" "$work/legacy.sqlite3"
 start migration DATABASE_PATH="$work/legacy.sqlite3"
-python3 "$here/api/test_migration.py" "$base" || fail "API migration"
+python3 "$here/api/test_migration.py" "$base" "$work/legacy.sqlite3" || fail "API migration"
 stop
 
 echo "== API: photos"
