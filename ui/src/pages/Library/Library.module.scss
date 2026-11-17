@@ -1,3 +1,5 @@
+@use '@/styles/layout' as *;
+
 .page {
   padding-top: 28px;
   padding-bottom: 96px;
@@ -59,17 +61,14 @@
   }
 }
 
-.chips {
-  display: flex;
-  gap: 6px;
+// bleeds into the side gutters, so chips scroll out to the screen edge and the arrows sit there
+.chipsRow {
   margin: 0 calc(-1 * var(--gutter));
-  padding: 2px var(--gutter);
-  overflow-x: auto;
-  scrollbar-width: none;
+}
 
-  &::-webkit-scrollbar {
-    display: none;
-  }
+.chips {
+  gap: 6px;
+  padding: 2px var(--gutter);
 }
 
 .list {
@@ -79,6 +78,23 @@
   margin: 12px -8px 0;
   padding: 0;
   list-style: none;
+
+  // row by row, so a newly loaded page only appends at the bottom
+  @media #{$wide} {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    // rows carry 8px of padding on each side
+    column-gap: calc(var(--columns-gap) - 16px);
+
+    // a row as tall as its neighbour in the other column, so the thumbnails line up
+    > li {
+      display: flex;
+    }
+
+    .row {
+      flex: 1;
+    }
+  }
 }
 
 .row {

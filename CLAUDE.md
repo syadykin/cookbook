@@ -129,6 +129,10 @@ From `ui/`: `npm run lint`, `npm run prettier`, `npm run schema`, `npx tsc -b`.
   editor fields in the browser — pure function, no server part. Its reference input is
   `e2e/fixtures/plov.txt`; when changing the heuristics, extend the e2e check rather than tuning
   for one sample.
+- From 1100px (`$wide` in `src/styles/_layout.scss`; media queries cannot read CSS variables)
+  the library and the recipe page (view and editor) use `.column.wide` and split into two
+  columns: the list as a row-by-row grid, the recipe below its top block into photos +
+  ingredients | steps + notes (`styles.columns`). Cook mode and login stay one column.
 - Fields under 16px get bumped to 16px on touch screens (iOS zooms into smaller focused inputs).
 - React Compiler is on; path alias `@/` → `ui/src`; prettier sorts imports.
 

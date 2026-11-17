@@ -5,6 +5,7 @@ import { routes } from '@/app/routes';
 import { AccountMenu } from '@/blocks/AccountMenu';
 import { Button } from '@/components/Button';
 import { Photo } from '@/components/Photo';
+import { ScrollRow } from '@/components/ScrollRow';
 import { Chip } from '@/components/Tag';
 import { ChevronRightIcon, PlusIcon, SearchIcon } from '@/components/icons';
 import { useOnVisible } from '@/hooks/useOnVisible';
@@ -44,7 +45,7 @@ export function Library() {
   const filtering = !!q || !!tag;
 
   return (
-    <main className={`column ${styles.page}`}>
+    <main className={`column wide ${styles.page}`}>
       <header className={`reveal-zone ${styles.head}`}>
         <h1 className={styles.title}>Рецепти</h1>
         <div className={styles.actions}>
@@ -72,7 +73,12 @@ export function Library() {
       </div>
 
       {!!tags?.length && (
-        <div aria-label="Фільтр за тегами" className={styles.chips} role="group">
+        <ScrollRow
+          aria-label="Фільтр за тегами"
+          className={styles.chipsRow}
+          role="group"
+          trackClassName={styles.chips}
+        >
           {tags.map((t, i) => (
             <Chip
               key={t.name}
@@ -83,7 +89,7 @@ export function Library() {
               {t.name}
             </Chip>
           ))}
-        </div>
+        </ScrollRow>
       )}
 
       <ul className={styles.list}>

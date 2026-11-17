@@ -458,6 +458,50 @@ const tagRows = await page.$$eval('main ul li a', (as) => as.map((a) => a.textCo
 check('a tag starts from its first page', tagRows.length === 30 && tagRows[0].includes('Партія 35'), `${tagRows.length} ${tagRows[0]}`);
 check('…and loads the rest of the tag', (await scrollUntil(35)) === 35, await rowCount());
 
+// a mouse cannot swipe the tag row: arrows scroll it, shown only towards a side that has more
+await page.goto(base + '/', { waitUntil: 'networkidle0' });
+const arrows = () => page.$$eval('button[aria-label^="Прокрутити"]', (bs) => bs.map((b) => b.getAttribute('aria-label')));
+check('tag row: only the right arrow at the start', JSON.stringify(await arrows()) === '["Прокрутити праворуч"]', JSON.stringify(await arrows()));
+await page.click('button[aria-label="Прокрутити праворуч"]');
+await sleep(700);
+const tagScroll = await page.$eval('[aria-label="Фільтр за тегами"]', (t) => t.scrollLeft);
+check('tag row: the arrow scrolls it, the left one appears', tagScroll > 100 && (await arrows()).includes('Прокрутити ліворуч'), `${tagScroll} ${JSON.stringify(await arrows())}`);
+await page.screenshot({ path: `${out}/21-tag-arrows.png` });
+
+// wide screens: the library in two columns, row by row; the recipe below its top block splits
+// into photos + ingredients on the left and steps on the right; cook mode stays one column
+await page.setViewport({ width: 1280, height: 900 });
+await page.goto(base + '/', { waitUntil: 'networkidle0' });
+const wideRows = await page.$$eval('main ul li', (ls) => ls.slice(0, 3).map((l) => l.getBoundingClientRect()).map((r) => [Math.round(r.left), Math.round(r.top)]));
+check('wide: library rows fill two columns left to right', wideRows[0][1] === wideRows[1][1] && wideRows[1][0] > wideRows[0][0] && wideRows[2][0] === wideRows[0][0] && wideRows[2][1] > wideRows[0][1], JSON.stringify(wideRows));
+await page.screenshot({ path: `${out}/22-wide-library.png` });
+await page.goto(base + '/r/2', { waitUntil: 'networkidle0' });
+const wideView = await page.evaluate(() => {
+  const r = (el) => el.getBoundingClientRect();
+  const main = r(document.querySelector('main'));
+  const photos = r(document.querySelector('section[aria-label="Фото страви"]'));
+  const ing = r(document.querySelector('#ing-h').closest('section'));
+  const steps = r(document.querySelector('#steps-h').closest('section'));
+  return { main: Math.round(main.width), photosRight: photos.right, ingLeft: ing.left, ingTop: ing.top, photosBottom: photos.bottom, stepsLeft: steps.left, stepsTop: steps.top, photosTop: photos.top };
+});
+check(
+  'wide: photos and ingredients left, steps right',
+  wideView.main > 1000 && wideView.stepsLeft > wideView.photosRight && wideView.ingLeft < wideView.stepsLeft && wideView.ingTop > wideView.photosBottom && Math.abs(wideView.stepsTop - wideView.photosTop) < 2,
+  JSON.stringify(wideView),
+);
+await page.screenshot({ path: `${out}/23-wide-recipe.png`, fullPage: true });
+await page.goto(base + '/r/2?edit', { waitUntil: 'networkidle0' });
+const wideEdit = await page.evaluate(() => ({
+  ing: document.querySelector('#ing-h').getBoundingClientRect().left,
+  steps: document.querySelector('#steps-h').getBoundingClientRect().left,
+}));
+check('wide: editor in the same two columns', wideEdit.steps - wideEdit.ing > 500, JSON.stringify(wideEdit));
+await page.screenshot({ path: `${out}/24-wide-edit.png`, fullPage: true });
+await page.goto(base + '/r/2/cook', { waitUntil: 'networkidle0' });
+const cookW = await page.evaluate(() => Math.round(document.querySelector('header').getBoundingClientRect().width));
+check('wide: cook mode stays one narrow column', cookW > 0 && cookW <= 640, cookW);
+await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
+
 check('no page errors', errors.length === 0, errors.join(' | '));
 
 // ---------- dark scheme, taken from the browser setting -------------------------------------------
@@ -506,6 +550,9 @@ await phone.screenshot({ path: `${out}/12-phone-sheet.png` });
 await phone.tap('button::-p-text(Скасувати)');
 await sleep(400);
 check('touch: sheet closes', !(await phone.$('::-p-text(Зробити фото)')));
+await phone.goto(base + '/', { waitUntil: 'networkidle0' });
+const phoneArrows = await phone.$$eval('button[aria-label^="Прокрутити"]', (bs) => bs.filter((b) => getComputedStyle(b).display !== 'none').length);
+check('touch: no tag row arrows, the row is swiped', phoneArrows === 0, phoneArrows);
 await phone.evaluate(() => window.scrollTo(0, 900));
 await sleep(200);
 await phone.screenshot({ path: `${out}/13-phone-edit-lists.png` });

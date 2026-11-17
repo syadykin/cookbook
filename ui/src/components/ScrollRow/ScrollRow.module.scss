@@ -1,0 +1,57 @@
+// :where() keeps these at zero specificity: a className passed in always wins
+:where(.row) {
+  position: relative;
+}
+
+:where(.track) {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+:where(.arrow) {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  width: 56px;
+  padding: 0;
+  border: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+
+  // the round face; the rest of the button is the fade over the cut-off items
+  svg {
+    box-sizing: content-box;
+    padding: 7px;
+    border: 1px solid var(--border-soft);
+    border-radius: 50%;
+    background: var(--surface);
+  }
+
+  &:hover {
+    color: var(--text);
+  }
+
+  // touch screens swipe the row instead
+  @media (hover: none), (pointer: coarse) {
+    display: none;
+  }
+}
+
+:where(.left) {
+  left: 0;
+  justify-content: flex-start;
+  background: linear-gradient(to right, var(--bg) 40%, transparent);
+}
+
+:where(.right) {
+  right: 0;
+  justify-content: flex-end;
+  background: linear-gradient(to left, var(--bg) 40%, transparent);
+}
