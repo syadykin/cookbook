@@ -260,7 +260,7 @@ func (s *Server) PhotosGet(ctx context.Context, req PhotosGetRequestObject) (Pho
 func (s *Server) deleteOrphanPhotos() error {
 	ids := []string{}
 	if err := s.db.Model(&Photo{}).
-		Where("recipe_id IS NULL AND step_id IS NULL AND created_at < ?", time.Now().Add(-orphanPhotoTTL)).
+		Where("recipe_id IS NULL AND step_id IS NULL AND created_at < ?", Now().Add(-orphanPhotoTTL)).
 		Pluck("id", &ids).Error; err != nil {
 		return err
 	}

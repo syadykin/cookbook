@@ -54,7 +54,7 @@ func (s *Server) startSession(c *gin.Context, userId int64) error {
 	if err := s.db.Create(&Session{
 		TokenHash: hashToken(token),
 		UserId:    userId,
-		ExpiresAt: time.Now().Add(ttl),
+		ExpiresAt: Now().Add(ttl),
 	}).Error; err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (s *Server) sessionMiddleware(c *gin.Context) {
 	}
 
 	sess := Session{}
-	err = s.db.Where("token_hash = ? AND expires_at > ?", hashToken(cookie.Value), time.Now()).
+	err = s.db.Where("token_hash = ? AND expires_at > ?", hashToken(cookie.Value), Now()).
 		Take(&sess).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return
@@ -93,7 +93,7 @@ func (s *Server) sessionMiddleware(c *gin.Context) {
 	// Sliding expiry, written at most about once per day of use rather than on every request.
 	ttl := s.config.Session.TTL
 	if time.Until(sess.ExpiresAt) < ttl-24*time.Hour {
-		expires := time.Now().Add(ttl)
+		expires := Now().Add(ttl)
 		if err := s.db.Model(&sess).Update("expires_at", expires).Error; err == nil {
 			http.SetCookie(c.Writer, s.sessionCookie(c, cookie.Value, int(ttl.Seconds())))
 		}
@@ -114,5 +114,5 @@ func (s *Server) UserId(ctx context.Context) int64 {
 }
 
 func (s *Server) deleteExpiredSessions() error {
-	return s.db.Where("expires_at <= ?", time.Now()).Delete(&Session{}).Error
+	return s.db.Where("expires_at <= ?", Now()).Delete(&Session{}).Error
 }

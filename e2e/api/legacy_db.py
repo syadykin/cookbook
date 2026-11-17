@@ -1,5 +1,5 @@
 """Writes a database in the schema of builds before ingredient groups (ingredients hung off
-recipes directly), for test_migration.py. Only the tables the migration touches; the server's
+recipes directly) and UTC times, for test_migration.py. Only the tables the migration touches; the server's
 AutoMigrate creates the rest."""
 
 import os
@@ -18,9 +18,11 @@ CREATE TABLE `ingredients` (`id` integer PRIMARY KEY AUTOINCREMENT,`name` text N
 CREATE INDEX `ingredients_recipe_position` ON `ingredients`(`recipe_id`,`position`);
 
 INSERT INTO users (id, email, name, subject) VALUES (1, 'cook@example.com', 'Тест Кухар', 'local:cook@example.com');
+-- Older builds wrote local time. Around the October DST switch the text order (what SQLite
+-- sorts by) disagrees with real time: 1 is 00:30 UTC, 2 is 01:10 UTC.
 INSERT INTO recipes (id, title, tags, user_id, created_at, updated_at) VALUES
-  (1, 'Вареники', '[]', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-  (2, 'Узвар', '[]', 1, '2026-01-02 00:00:00', '2026-01-02 00:00:00'),
+  (1, 'Вареники', '[]', 1, '2026-01-01 00:00:00', '2026-10-25 03:30:00+03:00'),
+  (2, 'Узвар', '[]', 1, '2026-01-02 00:00:00', '2026-10-25 03:10:00.5+02:00'),
   (3, 'Деруни', '[]', 1, '2026-01-03 00:00:00', '2026-01-03 00:00:00');
 -- ids deliberately out of display order
 INSERT INTO ingredients (id, recipe_id, position, name, quantity) VALUES
