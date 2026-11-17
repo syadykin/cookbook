@@ -1,4 +1,5 @@
 @use './tokens.css';
+@use './layout' as *;
 
 *,
 *::before,
@@ -62,4 +63,11 @@ body {
   margin: 0 auto;
   padding-left: var(--gutter);
   padding-right: var(--gutter);
+}
+
+// a page that splits into two columns on wide screens
+@media #{$wide} {
+  .column.wide {
+    max-width: var(--column-wide);
+  }
 }

@@ -57,6 +57,8 @@
 
   /* Sizes */
   --column: 640px; /* max width of the single column */
+  --column-wide: 1200px; /* max width with two columns (wide screens) */
+  --columns-gap: 40px;
   --gutter: 20px; /* side padding */
   --radius-photo: 14px;
   --radius-thumb: 10px;

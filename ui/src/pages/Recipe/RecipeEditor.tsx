@@ -122,7 +122,7 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
         </nav>
       </header>
 
-      <main className={cn('column', styles.main)}>
+      <main className={cn('column wide', styles.main)}>
         {d.restored && <p className={styles.notice}>Відновлено незбережені зміни.</p>}
         {isNew && (
           <Button className={styles.pasteButton} onClick={() => setPasting(true)}>
@@ -188,245 +188,256 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
           </datalist>
         </div>
 
-        <section aria-label="Фото страви" className={styles.photos}>
-          <Photo
-            className={styles.hero}
-            empty={<NoPhoto />}
-            photo={hero}
-            tint={photoTint(heroIndex)}
-            w={1280}
-          />
-          <div className={styles.thumbs}>
-            {draft.photos.map((p, i) => (
-              <div key={p.key} className={cn('reveal-zone', styles.thumbWrap)}>
-                <PhotoButton
-                  aria-label={photoLabel(p, i + 1) + (i === 0 ? ' (обкладинка)' : '')}
+        <div className={styles.columns}>
+          <div>
+            <section aria-label="Фото страви" className={styles.photos}>
+              <Photo
+                className={styles.hero}
+                empty={<NoPhoto />}
+                photo={hero}
+                tint={photoTint(heroIndex)}
+                w={1280}
+              />
+              <div className={styles.thumbs}>
+                {draft.photos.map((p, i) => (
+                  <div key={p.key} className={cn('reveal-zone', styles.thumbWrap)}>
+                    <PhotoButton
+                      aria-label={photoLabel(p, i + 1) + (i === 0 ? ' (обкладинка)' : '')}
+                      className={styles.thumb}
+                      failed={p.status === 'error'}
+                      photo={p}
+                      selected={i === heroIndex}
+                      tint={photoTint(i)}
+                      title={p.error}
+                      uploading={p.status === 'uploading'}
+                      onClick={() => setPhotoIndex(i)}
+                    />
+                    <RemovePhotoButton
+                      label={`Видалити фото ${i + 1}`}
+                      onClick={() => d.removePhoto(p.key)}
+                    />
+                  </div>
+                ))}
+                <AddPhotoTile
+                  aria-label="Додати фото рецепта"
                   className={styles.thumb}
-                  failed={p.status === 'error'}
-                  photo={p}
-                  selected={i === heroIndex}
-                  tint={photoTint(i)}
-                  title={p.error}
-                  uploading={p.status === 'uploading'}
-                  onClick={() => setPhotoIndex(i)}
-                />
-                <RemovePhotoButton
-                  label={`Видалити фото ${i + 1}`}
-                  onClick={() => d.removePhoto(p.key)}
+                  onClick={() => picker.open('recipe')}
                 />
               </div>
-            ))}
-            <AddPhotoTile
-              aria-label="Додати фото рецепта"
-              className={styles.thumb}
-              onClick={() => picker.open('recipe')}
-            />
-          </div>
-        </section>
+            </section>
 
-        <section aria-labelledby="ing-h" className={styles.section}>
-          <div className={styles.sectionHead}>
-            <SectionTitle id="ing-h">Інгредієнти</SectionTitle>
-            <div className={styles.servingsField}>
-              <label htmlFor="f-servings">Порцій</label>
-              <TextField
-                className={styles.numberField}
-                id="f-servings"
-                inputMode="numeric"
-                max={99}
-                min={1}
-                type="number"
-                value={draft.servings}
-                onChange={(e) =>
-                  d.set('servings', Math.min(99, Math.max(1, parseInt(e.target.value, 10) || 1)))
-                }
-              />
-            </div>
-          </div>
-
-          <SortableGroups
-            groups={draft.ingredientGroups}
-            itemsOf={(g) => g.ingredients}
-            renderItem={(x, row, handle) => (
-              <li
-                key={x.key}
-                ref={row.ref}
-                className={cn('reveal-zone', styles.ingRow, row.dragging && styles.dragging)}
-                style={row.style}
-              >
-                <DragHandle {...handle} />
-                <TextField
-                  id={`ing-${x.key}`}
-                  label="Інгредієнт"
-                  placeholder="Інгредієнт"
-                  value={x.name}
-                  onChange={(e) => d.patchIngredient(x.key, { name: e.target.value })}
-                />
-                <TextField
-                  className={styles.qtyField}
-                  label="Кількість"
-                  placeholder="500 г"
-                  value={x.quantity}
-                  onChange={(e) => d.patchIngredient(x.key, { quantity: e.target.value })}
-                />
-                <Button
-                  aria-label="Видалити інгредієнт"
-                  className={styles.rowButton}
-                  reveal="touch"
-                  onClick={() => d.removeIngredient(x.key)}
-                >
-                  <CloseIcon size={15} />
-                </Button>
-              </li>
-            )}
-            withItems={(g, ingredients) => ({ ...g, ingredients })}
-            onChange={d.setIngredientGroups}
-          >
-            {(g, gi, list) => (
-              <div className={styles.ingGroup} data-group={gi}>
-                <div className={cn('reveal-zone', styles.groupHead)}>
+            <section aria-labelledby="ing-h" className={styles.section}>
+              <div className={styles.sectionHead}>
+                <SectionTitle id="ing-h">Інгредієнти</SectionTitle>
+                <div className={styles.servingsField}>
+                  <label htmlFor="f-servings">Порцій</label>
                   <TextField
-                    className={styles.groupName}
-                    id={`grp-${g.key}`}
-                    label="Назва групи"
-                    placeholder={groupTitle('', gi, groupCount) || 'Назва групи, напр. «Тісто»'}
-                    value={g.name}
-                    onChange={(e) => d.renameGroup(g.key, e.target.value)}
+                    className={styles.numberField}
+                    id="f-servings"
+                    inputMode="numeric"
+                    max={99}
+                    min={1}
+                    type="number"
+                    value={draft.servings}
+                    onChange={(e) =>
+                      d.set(
+                        'servings',
+                        Math.min(99, Math.max(1, parseInt(e.target.value, 10) || 1)),
+                      )
+                    }
                   />
-                  {groupCount > 1 && (
+                </div>
+              </div>
+
+              <SortableGroups
+                groups={draft.ingredientGroups}
+                itemsOf={(g) => g.ingredients}
+                renderItem={(x, row, handle) => (
+                  <li
+                    key={x.key}
+                    ref={row.ref}
+                    className={cn('reveal-zone', styles.ingRow, row.dragging && styles.dragging)}
+                    style={row.style}
+                  >
+                    <DragHandle {...handle} />
+                    <TextField
+                      id={`ing-${x.key}`}
+                      label="Інгредієнт"
+                      placeholder="Інгредієнт"
+                      value={x.name}
+                      onChange={(e) => d.patchIngredient(x.key, { name: e.target.value })}
+                    />
+                    <TextField
+                      className={styles.qtyField}
+                      label="Кількість"
+                      placeholder="500 г"
+                      value={x.quantity}
+                      onChange={(e) => d.patchIngredient(x.key, { quantity: e.target.value })}
+                    />
                     <Button
-                      aria-label="Видалити групу"
+                      aria-label="Видалити інгредієнт"
                       className={styles.rowButton}
                       reveal="touch"
-                      onClick={() => d.removeGroup(g.key)}
+                      onClick={() => d.removeIngredient(x.key)}
                     >
-                      <TrashIcon size={15} />
+                      <CloseIcon size={15} />
                     </Button>
-                  )}
-                </div>
-                <ul ref={list.ref} className={cn(styles.editList, list.empty && styles.emptyGroup)}>
-                  {list.rows}
-                </ul>
-                <Button
-                  className={styles.addRow}
-                  onClick={() => focusSoon(`ing-${d.addIngredient(g.key)}`)}
-                >
-                  <PlusIcon size={16} />
-                  Додати інгредієнт
-                </Button>
-              </div>
-            )}
-          </SortableGroups>
-          <Button className={styles.addGroup} onClick={() => focusSoon(`grp-${d.addGroup()}`)}>
-            <PlusIcon size={16} />
-            Додати групу
-          </Button>
-        </section>
-
-        <section aria-labelledby="steps-h" className={styles.section}>
-          <div className={styles.sectionHead}>
-            <SectionTitle id="steps-h">Приготування</SectionTitle>
-          </div>
-          <ol className={styles.steps}>
-            <SortableList items={draft.steps} onReorder={d.reorderSteps}>
-              {(s, row, handle, i) => (
-                <li
-                  key={s.key}
-                  ref={row.ref}
-                  className={cn(
-                    'reveal-zone',
-                    styles.step,
-                    styles.editStep,
-                    row.dragging && styles.dragging,
-                  )}
-                  data-step={s.key}
-                  style={row.style}
-                >
-                  <div className={styles.stepTools}>
-                    <StepNumber n={i + 1} />
-                    <DragHandle {...handle} className={styles.stepHandle} />
-                    <Button
-                      aria-label={`Видалити крок ${i + 1}`}
-                      className={styles.stepHandle}
-                      reveal="touch"
-                      onClick={() => d.removeStep(s.key)}
+                  </li>
+                )}
+                withItems={(g, ingredients) => ({ ...g, ingredients })}
+                onChange={d.setIngredientGroups}
+              >
+                {(g, gi, list) => (
+                  <div className={styles.ingGroup} data-group={gi}>
+                    <div className={cn('reveal-zone', styles.groupHead)}>
+                      <TextField
+                        className={styles.groupName}
+                        id={`grp-${g.key}`}
+                        label="Назва групи"
+                        placeholder={groupTitle('', gi, groupCount) || 'Назва групи, напр. «Тісто»'}
+                        value={g.name}
+                        onChange={(e) => d.renameGroup(g.key, e.target.value)}
+                      />
+                      {groupCount > 1 && (
+                        <Button
+                          aria-label="Видалити групу"
+                          className={styles.rowButton}
+                          reveal="touch"
+                          onClick={() => d.removeGroup(g.key)}
+                        >
+                          <TrashIcon size={15} />
+                        </Button>
+                      )}
+                    </div>
+                    <ul
+                      ref={list.ref}
+                      className={cn(styles.editList, list.empty && styles.emptyGroup)}
                     >
-                      <TrashIcon size={15} />
+                      {list.rows}
+                    </ul>
+                    <Button
+                      className={styles.addRow}
+                      onClick={() => focusSoon(`ing-${d.addIngredient(g.key)}`)}
+                    >
+                      <PlusIcon size={16} />
+                      Додати інгредієнт
                     </Button>
                   </div>
-                  <div className={styles.stepBody}>
-                    <TextArea
-                      id={`step-${s.key}`}
-                      label={`Опис кроку ${i + 1}`}
-                      placeholder="Опишіть крок"
-                      value={s.text}
-                      onChange={(e) => d.patchStep(s.key, { text: e.target.value })}
-                    />
-                    <div className={styles.stepPhotos}>
-                      {s.photos.map((p, j) => (
-                        <div key={p.key} className={cn('reveal-zone', styles.stepPhotoWrap)}>
-                          <PhotoButton
-                            aria-label={photoLabel(p, j + 1)}
-                            className={styles.stepPhoto}
-                            failed={p.status === 'error'}
-                            photo={p}
-                            tabIndex={-1}
-                            tint={photoTint(i + j)}
-                            title={p.error}
-                            uploading={p.status === 'uploading'}
-                            w={640}
-                          />
-                          <RemovePhotoButton
-                            label="Видалити фото кроку"
-                            onClick={() => d.removePhoto(p.key)}
+                )}
+              </SortableGroups>
+              <Button className={styles.addGroup} onClick={() => focusSoon(`grp-${d.addGroup()}`)}>
+                <PlusIcon size={16} />
+                Додати групу
+              </Button>
+            </section>
+          </div>
+          <div>
+            <section aria-labelledby="steps-h" className={styles.section}>
+              <div className={styles.sectionHead}>
+                <SectionTitle id="steps-h">Приготування</SectionTitle>
+              </div>
+              <ol className={styles.steps}>
+                <SortableList items={draft.steps} onReorder={d.reorderSteps}>
+                  {(s, row, handle, i) => (
+                    <li
+                      key={s.key}
+                      ref={row.ref}
+                      className={cn(
+                        'reveal-zone',
+                        styles.step,
+                        styles.editStep,
+                        row.dragging && styles.dragging,
+                      )}
+                      data-step={s.key}
+                      style={row.style}
+                    >
+                      <div className={styles.stepTools}>
+                        <StepNumber n={i + 1} />
+                        <DragHandle {...handle} className={styles.stepHandle} />
+                        <Button
+                          aria-label={`Видалити крок ${i + 1}`}
+                          className={styles.stepHandle}
+                          reveal="touch"
+                          onClick={() => d.removeStep(s.key)}
+                        >
+                          <TrashIcon size={15} />
+                        </Button>
+                      </div>
+                      <div className={styles.stepBody}>
+                        <TextArea
+                          id={`step-${s.key}`}
+                          label={`Опис кроку ${i + 1}`}
+                          placeholder="Опишіть крок"
+                          value={s.text}
+                          onChange={(e) => d.patchStep(s.key, { text: e.target.value })}
+                        />
+                        <div className={styles.stepPhotos}>
+                          {s.photos.map((p, j) => (
+                            <div key={p.key} className={cn('reveal-zone', styles.stepPhotoWrap)}>
+                              <PhotoButton
+                                aria-label={photoLabel(p, j + 1)}
+                                className={styles.stepPhoto}
+                                failed={p.status === 'error'}
+                                photo={p}
+                                tabIndex={-1}
+                                tint={photoTint(i + j)}
+                                title={p.error}
+                                uploading={p.status === 'uploading'}
+                                w={640}
+                              />
+                              <RemovePhotoButton
+                                label="Видалити фото кроку"
+                                onClick={() => d.removePhoto(p.key)}
+                              />
+                            </div>
+                          ))}
+                          <AddPhotoTile
+                            aria-label={`Додати фото до кроку ${i + 1}`}
+                            className={styles.stepAddPhoto}
+                            icon={<ImagePlusIcon size={18} strokeWidth={1.4} />}
+                            onClick={() => picker.open(s.key)}
                           />
                         </div>
-                      ))}
-                      <AddPhotoTile
-                        aria-label={`Додати фото до кроку ${i + 1}`}
-                        className={styles.stepAddPhoto}
-                        icon={<ImagePlusIcon size={18} strokeWidth={1.4} />}
-                        onClick={() => picker.open(s.key)}
-                      />
-                    </div>
-                    <div className={styles.timerField}>
-                      <TimerIcon size={16} />
-                      <label htmlFor={`timer-${s.key}`}>Таймер</label>
-                      <TextField
-                        className={styles.numberField}
-                        id={`timer-${s.key}`}
-                        inputMode="decimal"
-                        placeholder="—"
-                        value={s.timer}
-                        onChange={(e) =>
-                          d.patchStep(s.key, { timer: e.target.value.replace(/[^\d.,]/g, '') })
-                        }
-                      />
-                      <span>хв</span>
-                    </div>
-                  </div>
-                </li>
-              )}
-            </SortableList>
-          </ol>
-          <Button className={styles.addRow} onClick={() => focusSoon(`step-${d.addStep()}`)}>
-            <PlusIcon size={16} />
-            Додати крок
-          </Button>
-        </section>
+                        <div className={styles.timerField}>
+                          <TimerIcon size={16} />
+                          <label htmlFor={`timer-${s.key}`}>Таймер</label>
+                          <TextField
+                            className={styles.numberField}
+                            id={`timer-${s.key}`}
+                            inputMode="decimal"
+                            placeholder="—"
+                            value={s.timer}
+                            onChange={(e) =>
+                              d.patchStep(s.key, { timer: e.target.value.replace(/[^\d.,]/g, '') })
+                            }
+                          />
+                          <span>хв</span>
+                        </div>
+                      </div>
+                    </li>
+                  )}
+                </SortableList>
+              </ol>
+              <Button className={styles.addRow} onClick={() => focusSoon(`step-${d.addStep()}`)}>
+                <PlusIcon size={16} />
+                Додати крок
+              </Button>
+            </section>
 
-        <section aria-labelledby="notes-h" className={styles.section}>
-          <div className={styles.sectionHead}>
-            <SectionTitle id="notes-h">Примітки</SectionTitle>
+            <section aria-labelledby="notes-h" className={styles.section}>
+              <div className={styles.sectionHead}>
+                <SectionTitle id="notes-h">Примітки</SectionTitle>
+              </div>
+              <TextArea
+                className={styles.notesField}
+                label="Примітки"
+                placeholder="Заміни, поради, звідки рецепт"
+                value={draft.notes ?? ''}
+                onChange={(e) => d.set('notes', e.target.value)}
+              />
+            </section>
           </div>
-          <TextArea
-            className={styles.notesField}
-            label="Примітки"
-            placeholder="Заміни, поради, звідки рецепт"
-            value={draft.notes ?? ''}
-            onChange={(e) => d.set('notes', e.target.value)}
-          />
-        </section>
+        </div>
 
         {onDelete && (
           <footer className={styles.dangerZone}>
