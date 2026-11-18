@@ -571,6 +571,31 @@ check('touch: sheet closes', !(await phone.$('::-p-text(Зробити фото)
 await phone.goto(base + '/', { waitUntil: 'networkidle0' });
 const phoneArrows = await phone.$$eval('button[aria-label^="Прокрутити"]', (bs) => bs.filter((b) => getComputedStyle(b).display !== 'none').length);
 check('touch: no tag row arrows, the row is swiped', phoneArrows === 0, phoneArrows);
+
+// a real touch swipe goes through the browser's gesture handling (touch-action), unlike the
+// mouse drag above: if the browser claims the pan it cancels the pointer stream mid-swipe
+await phone.goto(base + '/r/1/cook', { waitUntil: 'networkidle0' });
+await sleep(400);
+const touchSwipe = async (dx) => {
+  const box = await (await phone.$('section[aria-hidden="false"]')).boundingBox();
+  const y = box.y + 200;
+  const x = box.x + box.width / 2;
+  const cdp = await phone.createCDPSession();
+  const touch = (type, px) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: px === null ? [] : [{ x: px, y }] });
+  await touch('touchStart', x);
+  for (let i = 1; i <= 10; i++) {
+    await touch('touchMove', x + (dx * i) / 10);
+    await sleep(16);
+  }
+  await touch('touchEnd', null);
+  await cdp.detach();
+  await sleep(450);
+};
+const phoneCurrent = () => phone.$eval('section[aria-hidden="false"]', (s) => s.getAttribute('aria-label'));
+await touchSwipe(-160);
+check('touch: swipe left → step 1', (await phoneCurrent()) === 'Крок 1', await phoneCurrent());
+await touchSwipe(160);
+check('touch: swipe right → ingredients', (await phoneCurrent()) === 'Інгредієнти', await phoneCurrent());
 await phone.evaluate(() => window.scrollTo(0, 900));
 await sleep(200);
 await phone.screenshot({ path: `${out}/13-phone-edit-lists.png` });

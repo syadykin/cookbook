@@ -73,8 +73,6 @@
 .track {
   display: flex;
   height: 100%;
-  // vertical scrolling inside a slide stays with the browser; horizontal moves are ours
-  touch-action: pan-y;
   user-select: none;
   transition: var(--t-slide);
 }
@@ -88,6 +86,10 @@
   height: 100%;
   padding: 16px var(--gutter) 24px;
   overflow-y: auto;
+  // vertical scrolling stays with the browser; horizontal moves are our swipe. It must sit on
+  // the slide, not the track: browsers combine touch-action only up to the nearest scroll
+  // container, so on the track it never applied and the browser took the pan (pointercancel)
+  touch-action: pan-y;
 }
 
 .ingHead {
