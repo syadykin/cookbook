@@ -11,7 +11,8 @@ export type TimerState = {
 
 /** Per-recipe state that lives as long as the tab: shared by the recipe page and cook mode. */
 export type RecipeSession = {
-  servings?: number;
+  /** servings shown, valid while the recipe's own servings are still `base` */
+  servings?: { base: number; shown: number };
   /** crossed-out ingredient rows, by ingredient id */
   crossed: Record<number, boolean>;
 };

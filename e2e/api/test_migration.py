@@ -1,6 +1,7 @@
 """Run against a server started on legacy_db.py's database (its path is the second argument):
 ingredients land in one unnamed group per recipe, with their ids and order, and stored times
-move to UTC."""
+move to UTC, and
+recipes may have 0 servings."""
 import sqlite3
 
 from common import *  # noqa: F401,F403 — logs in on import
@@ -35,9 +36,13 @@ check('recipe without ingredients has no groups', req('GET', '/api/recipes/2')[1
 check('each recipe its own group', [i['id'] for i in req('GET', '/api/recipes/3')[1]['ingredientGroups'][0]['ingredients']] == [12])
 
 # the migrated data saves like any other
+r['servings'] = 0
 r['ingredientGroups'].append(dict(name='Начинка', ingredients=[dict(name='Вишні', quantity='300 г')]))
 st, u = req('PUT', '/api/recipes/1', r, {'If-Match': f'"{r["version"]}"'})
 check('save after migration', st == 200 and [g['name'] for g in u['ingredientGroups']] == ['', 'Начинка'], (st, u))
+# the recipes table was rebuilt to allow 0 servings; its children must not have gone with it
+check('0 servings after migration', u['servings'] == 0, u)
+check('other recipes keep their ingredients', [i['id'] for i in req('GET', '/api/recipes/3')[1]['ingredientGroups'][0]['ingredients']] == [12])
 # the server runs in a non-UTC TZ (run.sh), so this also covers fresh writes and the session row
 check('new writes stored in UTC', local_times() == [], local_times())
 check('saved recipe first', [r['id'] for r in req('GET', '/api/recipes')[1]['items']][0] == 1)

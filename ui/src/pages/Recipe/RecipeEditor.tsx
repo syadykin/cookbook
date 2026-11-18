@@ -236,13 +236,13 @@ export function RecipeEditor({ d, isNew, saving, error, onDone, onDelete }: Prop
                     id="f-servings"
                     inputMode="numeric"
                     max={99}
-                    min={1}
+                    min={0}
                     type="number"
                     value={draft.servings}
                     onChange={(e) =>
                       d.set(
                         'servings',
-                        Math.min(99, Math.max(1, parseInt(e.target.value, 10) || 1)),
+                        Math.min(99, Math.max(0, parseInt(e.target.value, 10) || 0)),
                       )
                     }
                   />

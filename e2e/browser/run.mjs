@@ -295,6 +295,35 @@ check(
 );
 check('headings after save', JSON.stringify(await groupHeadings()) === '["Інгредієнти №1","Зажарка","Подача"]', JSON.stringify(await groupHeadings()));
 
+// a recipe without servings (a sauce) scales by a multiplier from ×1, down to ×½
+const sauceId = await page.evaluate(async () => {
+  const r = await fetch('/api/recipes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'Соус', description: '', timeText: '', notes: '', servings: 0, tags: [], photos: [], ingredientGroups: [{ name: '', ingredients: [{ name: 'Вершки', quantity: '200 мл' }] }], steps: [] }),
+  });
+  return (await r.json()).id;
+});
+await page.goto(base + '/r/' + sauceId, { waitUntil: 'networkidle0' });
+const sauce = async () => ({
+  label: await page.$eval('section[aria-labelledby="ing-h"] [aria-live]', (s) => s.textContent).catch(() => null),
+  qty: await firstQty(),
+});
+const sauceStates = [await sauce()];
+await page.click('button[aria-label="Збільшити кількість"]');
+sauceStates.push(await sauce());
+await page.click('button[aria-label="Зменшити кількість"]');
+await page.click('button[aria-label="Зменшити кількість"]');
+sauceStates.push(await sauce());
+check(
+  'multiplier for 0 servings',
+  JSON.stringify(sauceStates) === JSON.stringify([{ label: '×1', qty: '200 мл' }, { label: '×2', qty: '400 мл' }, { label: '×½', qty: '100 мл' }]) &&
+    (await page.$eval('button[aria-label="Зменшити кількість"]', (b) => b.disabled)),
+  JSON.stringify(sauceStates),
+);
+await page.screenshot({ path: `${out}/9c-sauce-multiplier.png` });
+await page.evaluate(async (id) => fetch('/api/recipes/' + id, { method: 'DELETE' }), sauceId);
+
 // new recipe
 await page.goto(base + '/r/new', { waitUntil: 'networkidle0' });
 check('tab title for a new recipe', (await page.title()) === 'Новий рецепт — Їжак з макітрою', await page.title());

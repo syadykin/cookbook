@@ -74,7 +74,7 @@ actions:
         gorm: "not null;default:''"
     servings:
       x-oapi-codegen-extra-tags:
-        gorm: "not null;default:4;check:servings >= 1"
+        gorm: "not null;check:servings >= 0"
     tags:
       x-oapi-codegen-extra-tags:
         gorm: "serializer:json;type:text;not null"

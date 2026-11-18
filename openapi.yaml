@@ -461,10 +461,12 @@ components:
           example: "30 хв"
         servings:
           type: integer
-          minimum: 1
+          minimum: 0
           maximum: 99
           default: 4
-          description: Servings the ingredient quantities are written for.
+          description: >-
+            Servings the ingredient quantities are written for; 0 when they are not counted in
+            servings (a sauce, a dough): the client then scales them by a multiplier instead.
         tags:
           type: array
           maxItems: 20
