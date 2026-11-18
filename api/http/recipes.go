@@ -79,10 +79,6 @@ func (s *Server) saveRecipe(tx *gorm.DB, userId int64, existing *Recipe, in Reci
 	if err != nil {
 		return 0, err
 	}
-	servings := in.Servings
-	if servings == 0 {
-		servings = 4
-	}
 
 	var id int64
 	if existing == nil {
@@ -92,7 +88,7 @@ func (s *Server) saveRecipe(tx *gorm.DB, userId int64, existing *Recipe, in Reci
 			Description: in.Description,
 			TimeText:    strings.TrimSpace(in.TimeText),
 			Notes:       strings.TrimSpace(in.Notes),
-			Servings:    servings,
+			Servings:    in.Servings,
 			Tags:        tags,
 			Version:     1,
 		}
@@ -109,7 +105,7 @@ func (s *Server) saveRecipe(tx *gorm.DB, userId int64, existing *Recipe, in Reci
 				"description": in.Description,
 				"time_text":   strings.TrimSpace(in.TimeText),
 				"notes":       strings.TrimSpace(in.Notes),
-				"servings":    servings,
+				"servings":    in.Servings,
 				"tags":        string(tagsJson),
 				"version":     gorm.Expr("version + 1"),
 				"updated_at":  Now(),

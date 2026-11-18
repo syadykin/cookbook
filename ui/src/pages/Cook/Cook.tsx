@@ -230,6 +230,7 @@ function IngredientsSlide({ recipe }: { recipe: TRecipe }) {
         <ServingsControl
           canLess={servings.canLess}
           canMore={servings.canMore}
+          multiplier={servings.multiplier}
           servings={servings.servings}
           onLess={servings.less}
           onMore={servings.more}
@@ -237,7 +238,7 @@ function IngredientsSlide({ recipe }: { recipe: TRecipe }) {
       </div>
       {recipe.ingredientGroups.length ? (
         <IngredientList
-          baseServings={recipe.servings}
+          baseServings={servings.base}
           groups={recipe.ingredientGroups}
           recipeId={recipe.id}
           servings={servings.servings}

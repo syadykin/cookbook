@@ -382,9 +382,9 @@ func (c *column) section(title, aside string, firstBlock float64) error {
 const (
 	groupTitleH = 22.0
 	ingSize     = 9.5
-	ingLH   = 13.0
-	ingPad  = 5.0
-	qtyGap  = 10.0
+	ingLH       = 13.0
+	ingPad      = 5.0
+	qtyGap      = 10.0
 )
 
 func (c *column) ingredients(r Recipe) error {
@@ -585,8 +585,11 @@ func groupTitle(name string, index, count int) string {
 	return ""
 }
 
-// servingsLabel mirrors servingsLabel in ui/src/lib/recipe.ts.
+// servingsLabel mirrors servingsLabel in ui/src/lib/recipe.ts; 0 servings (a sauce) has none.
 func servingsLabel(n int) string {
+	if n == 0 {
+		return ""
+	}
 	a, b := n%10, n%100
 	switch {
 	case a == 1 && b != 11:

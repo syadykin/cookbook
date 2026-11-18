@@ -99,20 +99,20 @@ export function RecipeView({ recipe, onEdit }: Props) {
             )}
 
             {recipe.ingredientGroups.length > 0 && (
-              <section aria-labelledby="ing-h" className={cn('reveal-zone', styles.section)}>
+              <section aria-labelledby="ing-h" className={styles.section}>
                 <div className={styles.sectionHead}>
                   <SectionTitle id="ing-h">Інгредієнти</SectionTitle>
                   <ServingsControl
                     canLess={servings.canLess}
                     canMore={servings.canMore}
-                    reveal="touch"
+                    multiplier={servings.multiplier}
                     servings={servings.servings}
                     onLess={servings.less}
                     onMore={servings.more}
                   />
                 </div>
                 <IngredientList
-                  baseServings={recipe.servings}
+                  baseServings={servings.base}
                   groups={recipe.ingredientGroups}
                   recipeId={recipe.id}
                   servings={servings.servings}
@@ -197,7 +197,7 @@ export function RecipeView({ recipe, onEdit }: Props) {
         )}
 
         <footer className={cn('reveal-zone', styles.footer)}>
-          <p className="reveal-on-hover">{datesLine(recipe.createdAt, recipe.updatedAt)}</p>
+          <p className="reveal-on-hover touch-visible">{datesLine(recipe.createdAt, recipe.updatedAt)}</p>
         </footer>
       </main>
     </>

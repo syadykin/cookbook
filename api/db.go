@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"gorm.io/driver/sqlite"
@@ -51,6 +52,9 @@ func InitDb(path string, debug bool) (*gorm.DB, error) {
 	}
 	sqlDB.SetMaxOpenConns(1)
 
+	if err := migrateServings(db); err != nil {
+		return nil, fmt.Errorf("migrate servings: %w", err)
+	}
 	if err := db.AutoMigrate(
 		&http.User{},
 		&http.Session{},
@@ -109,6 +113,53 @@ func migrateIngredients(db *gorm.DB) error {
 			if err := tx.Exec(s).Error; err != nil {
 				return err
 			}
+		}
+		return nil
+	})
+}
+
+// migrateServings lets recipes.servings be 0 (quantities not counted in servings). Older
+// databases have CHECK (servings >= 1) and DEFAULT 4; GORM would keep the check (it only looks
+// constraints up by name) and, while a default is declared, turns a zero into it on insert.
+// SQLite can change neither in place, so the table is rebuilt from its own DDL. Foreign keys are
+// off meanwhile, or dropping the old table would cascade into groups, steps and photos; that
+// pragma is ignored inside a transaction, and with one connection it reaches the one that runs
+// the rebuild. Runs before AutoMigrate, which restores the indexes dropped with the table (the
+// search triggers come back in initSearch).
+func migrateServings(db *gorm.DB) error {
+	var ddl string
+	if err := db.Raw(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'recipes'`).Scan(&ddl).Error; err != nil {
+		return err
+	}
+	const oldCheck = "CHECK (servings >= 1)"
+	if !strings.Contains(ddl, oldCheck) {
+		return nil
+	}
+	ddl = strings.Replace(ddl, oldCheck, "CHECK (servings >= 0)", 1)
+	ddl = strings.Replace(ddl, "`servings` integer NOT NULL DEFAULT 4", "`servings` integer NOT NULL", 1)
+	ddl = strings.Replace(ddl, "CREATE TABLE `recipes`", "CREATE TABLE `recipes_servings`", 1)
+
+	if err := db.Exec(`PRAGMA foreign_keys = OFF`).Error; err != nil {
+		return err
+	}
+	defer db.Exec(`PRAGMA foreign_keys = ON`)
+	return db.Transaction(func(tx *gorm.DB) error {
+		for _, s := range []string{
+			ddl,
+			`INSERT INTO recipes_servings SELECT * FROM recipes`,
+			`DROP TABLE recipes`,
+			`ALTER TABLE recipes_servings RENAME TO recipes`,
+		} {
+			if err := tx.Exec(s).Error; err != nil {
+				return err
+			}
+		}
+		var broken []map[string]any
+		if err := tx.Raw(`PRAGMA foreign_key_check`).Scan(&broken).Error; err != nil {
+			return err
+		}
+		if len(broken) > 0 {
+			return fmt.Errorf("foreign key check: %v", broken)
 		}
 		return nil
 	})

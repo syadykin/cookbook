@@ -24,6 +24,8 @@ export const photoTint = (i: number) => PHOTO_TINTS[i % PHOTO_TINTS.length]!;
 export const MIN_SERVINGS = 1;
 /** −/+ goes up to 24, or the recipe's own base if that is larger. */
 export const maxServings = (base: number) => Math.max(24, base);
+/** A recipe with 0 servings (a sauce) scales by a multiplier from ×1, which may go down to ×½. */
+export const MIN_MULTIPLIER = 0.5;
 
 const formatNumber = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
 const parseNumber = (s: string) => parseFloat(s.replace(',', '.'));
@@ -60,6 +62,9 @@ export function servingsLabel(n: number): string {
   }
   return `на ${n} порцій`;
 }
+
+/** «×½», «×1», «×2» — for recipes without servings. */
+export const multiplierLabel = (n: number) => `×${n === 0.5 ? '½' : n}`;
 
 /** Seconds → «9:42» (rounded up, so a timer shows 0:00 only when it is really done). */
 export function formatTimer(seconds: number): string {
