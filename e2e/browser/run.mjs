@@ -588,6 +588,8 @@ await phone.goto(base + '/r/1', { waitUntil: 'networkidle0' });
 await sleep(400);
 const navOpacity = await phone.$eval('nav[aria-label="Навігація"]', (n) => getComputedStyle(n).opacity);
 check('touch: top bar visible', navOpacity === '1', navOpacity);
+const datesOpacity = await phone.$eval('main footer p', (p) => getComputedStyle(p).opacity).catch(() => null);
+check('touch: created/updated dates visible', datesOpacity === '1', datesOpacity);
 await phone.screenshot({ path: `${out}/11-phone-recipe.png` });
 await phone.goto(base + '/r/1?edit', { waitUntil: 'networkidle0' });
 await phone.tap('button[aria-label="Додати фото рецепта"]');

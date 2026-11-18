@@ -197,7 +197,7 @@ export function RecipeView({ recipe, onEdit }: Props) {
         )}
 
         <footer className={cn('reveal-zone', styles.footer)}>
-          <p className="reveal-on-hover">{datesLine(recipe.createdAt, recipe.updatedAt)}</p>
+          <p className="reveal-on-hover touch-visible">{datesLine(recipe.createdAt, recipe.updatedAt)}</p>
         </footer>
       </main>
     </>
