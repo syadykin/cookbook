@@ -2,8 +2,10 @@ name: CI
 
 on:
   push:
+    # main is tested by docker-publish.yml, which calls this workflow before pushing the image
+    branches-ignore: [main]
   pull_request:
-  # lets the release workflow run the same checks before it publishes an image
+  # lets docker-publish.yml run the same checks before it publishes an image
   workflow_call:
 
 # a newer push to the same branch makes an older run pointless
