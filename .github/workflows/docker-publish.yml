@@ -1,7 +1,8 @@
 name: Publish Docker image
 
-# Runs when a GitHub release is published (not for drafts). The release's tag must be a semver
-# such as v1.2.3; the image gets 1.2.3, 1.2 and, unless it is a pre-release, latest.
+# A push to main publishes the image as latest. A published GitHub release (not a draft) publishes
+# it under its version only and leaves latest alone: the release's tag must be a semver such as
+# v1.2.3, and the image gets 1.2.3 and 1.2 (a pre-release such as v1.2.3-rc1 gets just 1.2.3-rc1).
 #
 # Requires, under Settings -> Secrets and variables -> Actions:
 #   variable DOCKERHUB_REPOSITORY - target repository, e.g. syadykin/cookbook
@@ -9,8 +10,15 @@ name: Publish Docker image
 #   secret   DOCKERHUB_TOKEN      - Docker Hub access token with write permission
 
 on:
+  push:
+    branches: [main]
   release:
     types: [published]
+
+# runs that finish out of order must not leave an older main build as latest
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -54,11 +62,14 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ vars.DOCKERHUB_REPOSITORY }}
-          # v1.2.3 becomes 1.2.3, 1.2 and latest; the default latest=auto leaves
-          # pre-release tags such as v1.2.3-rc1 out of latest
+          # latest comes only from main; without latest=false a release would move it too
+          flavor: |
+            latest=false
+          # the semver tags apply only to releases, the raw one only to pushes to main
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
         uses: docker/build-push-action@v6

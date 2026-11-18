@@ -34,10 +34,11 @@ From `ui/`: `npm run lint`, `npm run prettier`, `npm run schema`, `npx tsc -b`.
   browser walkthrough (`e2e/browser/run.mjs`, puppeteer-core driving `/usr/bin/google-chrome`,
   override with `CHROME=`) at 390px — the reference phone width. There are no unit tests. Run it
   after changes and add a check when adding behaviour.
-- CI (`.github/workflows/ci.yml`) runs UI lint + `make e2e` on every push and PR and uploads
-  the e2e directory (screenshots, server logs) as an artifact. `docker-publish.yml` runs only
-  for published GitHub releases: it calls the CI workflow first and pushes the image to Docker
-  Hub only if that passes.
+- CI (`.github/workflows/ci.yml`) runs UI lint + `make e2e` on every PR and every push except
+  to `main`, and uploads the e2e directory (screenshots, server logs) as an artifact.
+  `docker-publish.yml` runs for pushes to `main` and published GitHub releases: it calls the CI
+  workflow first and pushes the image to Docker Hub only if that passes — `latest` from `main`,
+  `X.Y.Z` and `X.Y` from a release (which never moves `latest`).
 - Blink fixes hover/pointer media at launch and CDP media emulation ignores them, so the
   walkthrough uses one browser per input type via `--blink-settings=primaryHoverType=…`.
 - The Makefile lists UI sources with `find` (make's `wildcard` does not recurse); if a UI change

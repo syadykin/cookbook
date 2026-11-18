@@ -38,8 +38,9 @@ make e2e        # needs Python 3 with Pillow, Node and Google Chrome
 
 Exercises the recipe and photo API and walks through the app in a browser (mouse and touch, light
 and dark) on throwaway data; screenshots stay in the directory the script prints at the end. CI
-runs the same on every push; publishing a GitHub release (tag `vX.Y.Z`) also pushes the Docker
-image.
+runs the same on every push and pull request. Each push to `main` that passes also pushes the
+Docker image as `latest`; publishing a GitHub release (tag `vX.Y.Z`) pushes it as `X.Y.Z` and
+`X.Y`, leaving `latest` alone.
 
 ## Material
 
